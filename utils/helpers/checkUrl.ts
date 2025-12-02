@@ -22,29 +22,31 @@ export async function checkUrlAvailability(
       .from("posts")
       .select("topic, title, class, subject, authorId, status, thumbnail");
 
-    if (urlOptions.subject) {
+    if (urlOptions.subjectSlug) {
       query = query.eq(
         "subject",
-        urlOptions.subject as NonNullable<Tables<"posts">["subject"]>
+        urlOptions.subjectSlug as NonNullable<Tables<"posts">["subject"]>
       );
     }
 
-    if (urlOptions.classNo) {
-      query = query.eq(
+    if (urlOptions.classSlug) {
+      const classMatch = urlOptions.classSlug.match(/class-(\d+)/i);
+      if(classMatch) query = query.eq(
         "class",
-        urlOptions.classNo as NonNullable<Tables<"posts">["class"]>
+        classMatch[1] as NonNullable<Tables<"posts">["class"]>
       );
     }
 
-    if (urlOptions.chapterNo) {
-      query = query.eq(
+    if (urlOptions.chapterSlug) {
+      const chapterMatch = urlOptions.chapterSlug.match(/chapter-(\d+)/i);
+      if(chapterMatch) query = query.eq(
         "chapter_no",
-        Number(urlOptions.chapterNo as unknown as string)
+        parseInt(chapterMatch[1]) as NonNullable<Tables<"posts">["chapter_no"]>
       );
     }
 
     const { data, error } = await query
-      .eq("topic", urlOptions.topic)
+      .eq("topic", urlOptions.topicSlug)
       .maybeSingle();
 
     if (error) throw error;

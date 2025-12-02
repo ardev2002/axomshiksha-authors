@@ -9,6 +9,7 @@ import { getFreshUser } from "./getFreshUser";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/s3";
 import { URLOptions } from "../types";
+import { urlToContentKey } from "./generatePostUrl";
 
 export interface SavedPostResult {
   successMsg?: string;
@@ -51,7 +52,6 @@ export async function saveToDB(
       content,
     } = fullPostSchema.parse(rawPost);
 
-    // Only check URL availability for published posts, not drafts
     let isAvailable = true;
     let errMsg = "";
     let draftPost: Partial<Tables<"posts">> | null = null;
@@ -69,7 +69,6 @@ export async function saveToDB(
       errMsg = result.errMsg || "";
       draftPost = result.draftPost || null;
 
-      // If a draft post exists, we need confirmation before proceeding
       if (draftPost) {
         return {
           statusText: "fail" as const,
@@ -95,17 +94,14 @@ export async function saveToDB(
     const authorId =
       (await getFreshUser())?.email?.split("@")[0] || "anonymous";
 
-    // Upload content to S3 as MDX file using URL as key base
     let contentKey: string | null = null;
 
     if (content && (status === "published" || status === "draft")) {
-      // Prefer generatedUrl; if missing, fall back to topic
       const base = generatedUrl && generatedUrl.trim().length > 0
         ? generatedUrl
         : topic;
 
-      const safeKey = base.replace(/\//g, "-");
-      const key = `md/${safeKey}.mdx`;
+      const key = urlToContentKey(base);
 
       const command = new PutObjectCommand({
         Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,

@@ -44,9 +44,10 @@ import { cleanupOrphanedImages } from "@/utils/s3/cleanup";
 import DraftPostDialog from "./DraftPostDialog";
 import { Tables } from "@/utils/supabase/types";
 import SectionsEditor from "../components/SectionsEditor";
-import { Section } from "../components/sectionTypes";
+import { CodeBlock, Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
+import { SUBJECTS } from "@/utils/CONSTANT";
 
 export default function AddPostPage() {
   const [topic, setTopic] = useState("");
@@ -161,8 +162,11 @@ export default function AddPostPage() {
     convertSectionsToMDXWithMeta(sections, {
       title,
       description: desc,
-      thumbnail,
+      chapter_no: parseInt(chapterNo),
+      class: classValue,
       reading_time: readingTime ? parseInt(readingTime) : null,
+      subject,
+      thumbnail,
     });
 
   const validateSections = () => {
@@ -173,7 +177,7 @@ export default function AddPostPage() {
           return removeWhiteSpaces(block.content) !== "";
         }
         if (block.type === "code") {
-          const cb = block as any;
+          const cb = block as CodeBlock;
           return (
             cb.content.trim() !== "" ||
             (cb.subtitle && removeWhiteSpaces(cb.subtitle) !== "")
@@ -421,30 +425,13 @@ export default function AddPostPage() {
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
-                  {[
-                    "Assamese",
-                    "English",
-                    "Mathematics",
-                    "S. Science",
-                    "Science",
-                    "Hindi",
-                    "Adv. Maths",
-                    "Sanskrit",
-                    "Computer Science & Application",
-                    "Biology",
-                    "Physics",
-                    "Chemistry",
-                    "History",
-                    "Geography",
-                    "Logic & Philosophy",
-                    "Political Science",
-                    "Statistics",
-                    "Others",
-                  ].map((subj) => (
-                    <SelectItem value={subj} key={subj}>
-                      {subj}
-                    </SelectItem>
-                  ))}
+                  {
+                    Object.entries(SUBJECTS).map(([key, value]) => (
+                      <SelectItem value={value} key={value}>
+                        {key}
+                      </SelectItem>
+                    ))
+                  }
                 </SelectContent>
               </Select>
 

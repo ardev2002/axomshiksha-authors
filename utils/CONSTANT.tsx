@@ -17,27 +17,26 @@ export const CLASSES = [
   { id: "12", name: "Class 12" },
 ] as const;
 
-export const SUBJECTS: Database["public"]["Enums"]["Subject"][] = [
-  "Assamese",
-  "English",
-  "Mathematics",
-  "S. Science",
-  "Science",
-  "Hindi",
-  "Adv. Maths",
-  "Sanskrit",
-  "Computer Science & Application",
-  "Biology",
-  "Physics",
-  "Chemistry",
-  "History",
-  "Geography",
-  "Logic & Philosophy",
-  "Political Science",
-  "Statistics",
-  "Others",
-] as const;
-
+export const SUBJECTS = {
+  Assamese: "assamese",
+  English: "english",
+  Mathematics: "mathematics",
+  "S. Science": "sscience",
+  Science: "science",
+  Hindi: "hindi",
+  "Adv. Maths": "advmaths",
+  Sanskrit: "sanskrit",
+  "Computer Science & Application": "csa",
+  Biology: "biology",
+  Physics: "physics",
+  Chemistry: "chemistry",
+  History: "history",
+  Geography: "geography",
+  "Logic & Philosophy": "logic&philosophy",
+  "Political Science": "political-science",
+  Statistics: "statistics",
+  Others: "others",
+}
 export const AUTHORS = [
   { id: "dekalasit", name: "Ankur Rajbongshi" },
   { id: "manabendra847", name: "Manabendra Nath" },

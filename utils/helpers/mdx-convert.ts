@@ -60,10 +60,10 @@ function convertSectionsBodyToMDX(sections: Section[]): string {
           if (cb.subtitle && removeWhiteSpaces(cb.subtitle)) {
             contentBlocksMDX.push(`### ${removeWhiteSpaces(cb.subtitle)}`);
           }
-          if (removeWhiteSpaces(cb.content)) {
+          if (cb.content && cb.content.trim()) {
             const language = cb.language ? cb.language : "";
             contentBlocksMDX.push(
-              `\`\`\`${language}\n${removeWhiteSpaces(cb.content)}\n\`\`\``
+              `\`\`\`${language}\n${cb.content}\n\`\`\``
             );
           }
         }
@@ -90,6 +90,9 @@ export interface PostMetaForMDX {
   description: string;
   thumbnail: string;
   reading_time: number | null;
+  class: string | null;
+  subject: string | null;
+  chapter_no: number | null;
 }
 
 /**
@@ -107,9 +110,11 @@ export function convertSectionsToMDXWithMeta(
   lines.push(
     `description: "${escapeYamlString(meta.description || "")}"`
   );
-  if (meta.thumbnail) {
-    lines.push(`thumbnail: "${escapeYamlString(meta.thumbnail)}"`);
-  }
+  if (meta.class) lines.push(`class: "${escapeYamlString(meta.class || "")}"`);
+  if (meta.subject) lines.push(`subject: "${escapeYamlString(meta.subject || "")}"`);
+  if (meta.chapter_no) lines.push(`chapter_no: ${meta.chapter_no || ""}`);
+  
+  if (meta.thumbnail) lines.push(`thumbnail: "${escapeYamlString(meta.thumbnail)}"`);
   if (meta.reading_time != null && !Number.isNaN(meta.reading_time)) {
     lines.push(`reading_time: ${meta.reading_time}`);
   }

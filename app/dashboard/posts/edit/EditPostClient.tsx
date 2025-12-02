@@ -35,6 +35,7 @@ import SectionsEditor from "../components/SectionsEditor";
 import type { Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
+import { SUBJECTS } from "@/utils/CONSTANT";
 
 export default function EditPostClient({
   post,
@@ -70,33 +71,39 @@ export default function EditPostClient({
     convertSectionsToMDXWithMeta(sections, {
       title,
       description: desc,
-      thumbnail,
+      chapter_no: parseInt(chapterNo),
+      class: classValue,
       reading_time: readingTime ? parseInt(readingTime) : null,
+      subject,
+      thumbnail,
     });
 
   const validateSections = () => {
-    const hasContent = sections.some((section) =>
-      removeWhiteSpaces(section.title) !== "" ||
-      section.contentBlocks.some((block) => {
-        if (block.type === "paragraph") {
-          return removeWhiteSpaces(block.content) !== "";
-        }
-        if (block.type === "code") {
-          const cb = block as any;
-          return (
-            cb.content.trim() !== "" ||
-            (cb.subtitle && removeWhiteSpaces(cb.subtitle) !== "")
-          );
-        }
-        if (block.type === "list-group") {
-          const lg = block as any;
-          return (
-            removeWhiteSpaces(lg.subtitle) !== "" ||
-            lg.items.some((item: any) => removeWhiteSpaces(item.content) !== "")
-          );
-        }
-        return false;
-      })
+    const hasContent = sections.some(
+      (section) =>
+        removeWhiteSpaces(section.title) !== "" ||
+        section.contentBlocks.some((block) => {
+          if (block.type === "paragraph") {
+            return removeWhiteSpaces(block.content) !== "";
+          }
+          if (block.type === "code") {
+            const cb = block as any;
+            return (
+              cb.content.trim() !== "" ||
+              (cb.subtitle && removeWhiteSpaces(cb.subtitle) !== "")
+            );
+          }
+          if (block.type === "list-group") {
+            const lg = block as any;
+            return (
+              removeWhiteSpaces(lg.subtitle) !== "" ||
+              lg.items.some(
+                (item: any) => removeWhiteSpaces(item.content) !== ""
+              )
+            );
+          }
+          return false;
+        })
     );
 
     if (!hasContent) {
@@ -144,7 +151,11 @@ export default function EditPostClient({
       <BreadCrumb
         paths={[
           { icon: <Home size={16} />, path: "/", title: "Home" },
-          { icon: <Layout size={16} />, path: "/dashboard", title: "Dashboard" },
+          {
+            icon: <Layout size={16} />,
+            path: "/dashboard",
+            title: "Dashboard",
+          },
           {
             icon: <BookOpen size={16} />,
             path: "/dashboard/posts",
@@ -155,7 +166,9 @@ export default function EditPostClient({
       />
 
       <ValidationErrorCard
-        errors={(editState as any).errorMsg ? [(editState as any).errorMsg] : []}
+        errors={
+          (editState as any).errorMsg ? [(editState as any).errorMsg] : []
+        }
       />
 
       <form className="space-y-8" onSubmit={handleSubmit}>
@@ -275,28 +288,9 @@ export default function EditPostClient({
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
-                  {[
-                    "Assamese",
-                    "English",
-                    "Mathematics",
-                    "S. Science",
-                    "Science",
-                    "Hindi",
-                    "Adv. Maths",
-                    "Sanskrit",
-                    "Computer Science & Application",
-                    "Biology",
-                    "Physics",
-                    "Chemistry",
-                    "History",
-                    "Geography",
-                    "Logic & Philosophy",
-                    "Political Science",
-                    "Statistics",
-                    "Others",
-                  ].map((subj) => (
-                    <SelectItem value={subj} key={subj}>
-                      {subj}
+                  {Object.entries(SUBJECTS).map(([key, value]) => (
+                    <SelectItem value={value} key={value}>
+                      {key}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -330,11 +324,7 @@ export default function EditPostClient({
               name="reading_time"
               value={readingTime || ""}
             />
-            <input
-              type="hidden"
-              name="status"
-              value={post.status || "draft"}
-            />
+            <input type="hidden" name="status" value={post.status || "draft"} />
           </CardContent>
         </Card>
 

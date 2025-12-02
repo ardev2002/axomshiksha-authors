@@ -144,24 +144,24 @@ export type Database = {
         | "12"
       Status: "draft" | "published" | "scheduled"
       Subject:
-        | "Assamese"
-        | "English"
-        | "Mathematics"
-        | "S. Science"
-        | "Science"
-        | "Hindi"
-        | "Adv. Maths"
-        | "Sanskrit"
-        | "Computer Science & Application"
-        | "Biology"
-        | "Physics"
-        | "Chemistry"
-        | "History"
-        | "Geography"
-        | "Logic & Philosophy"
-        | "Political Science"
-        | "Statistics"
-        | "Others"
+        | "assamese"
+        | "english"
+        | "mathematics"
+        | "sscience"
+        | "science"
+        | "hindi"
+        | "advmaths"
+        | "sanskrit"
+        | "csa"
+        | "biology"
+        | "physics"
+        | "chemistry"
+        | "history"
+        | "geography"
+        | "logic&philosophy"
+        | "political-science"
+        | "statistics"
+        | "others"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -296,24 +296,24 @@ export const Constants = {
       Class: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
       Status: ["draft", "published", "scheduled"],
       Subject: [
-        "Assamese",
-        "English",
-        "Mathematics",
-        "S. Science",
-        "Science",
-        "Hindi",
-        "Adv. Maths",
-        "Sanskrit",
-        "Computer Science & Application",
-        "Biology",
-        "Physics",
-        "Chemistry",
-        "History",
-        "Geography",
-        "Logic & Philosophy",
-        "Political Science",
-        "Statistics",
-        "Others",
+        "assamese",
+        "english",
+        "mathematics",
+        "sscience",
+        "science",
+        "hindi",
+        "advmaths",
+        "sanskrit",
+        "csa",
+        "biology",
+        "physics",
+        "chemistry",
+        "history",
+        "geography",
+        "logic&philosophy",
+        "political-science",
+        "statistics",
+        "others",
       ],
     },
   },

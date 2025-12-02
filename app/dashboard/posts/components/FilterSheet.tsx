@@ -136,9 +136,9 @@ export default function FilterSheet({
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SUBJECTS.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
+                  {Object.entries(SUBJECTS).map(([key, value]) => (
+                    <SelectItem key={value} value={value}>
+                      {key}
                     </SelectItem>
                   ))}
                 </SelectContent>
