@@ -8,38 +8,63 @@ import { PostgrestError } from "@supabase/supabase-js";
 import { getFreshUser } from "./getFreshUser";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/s3";
+import { URLOptions } from "../types";
 
 export interface SavedPostResult {
   successMsg?: string;
-  errUrlMsg?: string;
+  errTopicMsg?: string;
   statusText: "ok" | "fail" | "not_submitted";
-  fieldErrors?: Record<string, string>; // field-level errors
-  values?: Record<string, string | number>; // prefilled values
-  draftPost?: Pick<
-    Tables<"posts">,
-    "url" | "title" | "class" | "subject" | "authorId" | "status" | "thumbnail"
-  >;
+  fieldErrors?: Record<string, string>;
+  values?: Record<string, string | number>;
+  draftPost?: Partial<Tables<"posts">> | null;
   requiresConfirmation?: boolean;
 }
 
 export async function saveToDB(
   rawPost: Pick<
     Tables<"posts">,
-    "url" | "title" | "desc" | "class" | "subject" | "chapter_no" | "reading_time" | "status" | "thumbnail"
+    | "topic"
+    | "title"
+    | "desc"
+    | "class"
+    | "subject"
+    | "chapter_no"
+    | "reading_time"
+    | "status"
+    | "thumbnail"
   > & { content?: string },
-  confirmed: boolean = false
+  generatedUrl?: string,
+  urlOptions?: URLOptions,
+  confirmed: boolean = false,
 ): Promise<SavedPostResult> {
   try {
-    const { url, title, thumbnail, status, desc, class: classValue, subject, chapter_no, reading_time, content } =
-      fullPostSchema.parse(rawPost);
+    const {
+      topic,
+      title,
+      thumbnail,
+      status,
+      desc,
+      class: classValue,
+      subject,
+      chapter_no,
+      reading_time,
+      content,
+    } = fullPostSchema.parse(rawPost);
 
     // Only check URL availability for published posts, not drafts
     let isAvailable = true;
     let errMsg = "";
-    let draftPost = null;
+    let draftPost: Partial<Tables<"posts">> | null = null;
 
     if (status === "published" && !confirmed) {
-      const result = await checkUrlAvailability(url);
+      if (!urlOptions) {
+        return {
+          statusText: "fail",
+          errTopicMsg: "Invalid URL options. Please try again.",
+        };
+      }
+
+      const result = await checkUrlAvailability(urlOptions);
       isAvailable = result.isAvailable;
       errMsg = result.errMsg || "";
       draftPost = result.draftPost || null;
@@ -50,7 +75,7 @@ export async function saveToDB(
           statusText: "fail" as const,
           requiresConfirmation: true,
           draftPost: {
-            url: draftPost.url,
+            topic: draftPost.topic,
             title: draftPost.title,
             class: draftPost.class,
             subject: draftPost.subject,
@@ -62,58 +87,71 @@ export async function saveToDB(
       }
     }
 
-    if (isAvailable) {
-      const supabase = await createClient();
-      const authorId = (await getFreshUser())?.email?.split("@")[0] ||
-        "anonymous";
-      
-      // Upload content to S3 as MDX file
-      let contentKey = null;
-      if (content && (status === "published" || status === "draft")) {
-        const key = `md/${url}.mdx`;
-        const command = new PutObjectCommand({
-          Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
-          Key: key,
-          Body: content,
-          ContentType: "text/markdown",
-        });
-        
-        try {
-          await s3Client.send(command);
-          contentKey = key;
-        } catch (error) {
-          console.error("Error uploading content to S3:", error);
-          throw new Error("Failed to upload content to S3");
-        }
+    if (!isAvailable) {
+      return { statusText: "fail" as const, errTopicMsg: errMsg };
+    }
+
+    const supabase = await createClient();
+    const authorId =
+      (await getFreshUser())?.email?.split("@")[0] || "anonymous";
+
+    // Upload content to S3 as MDX file using URL as key base
+    let contentKey: string | null = null;
+
+    if (content && (status === "published" || status === "draft")) {
+      // Prefer generatedUrl; if missing, fall back to topic
+      const base = generatedUrl && generatedUrl.trim().length > 0
+        ? generatedUrl
+        : topic;
+
+      const safeKey = base.replace(/\//g, "-");
+      const key = `md/${safeKey}.mdx`;
+
+      const command = new PutObjectCommand({
+        Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
+        Key: key,
+        Body: content,
+        ContentType: "text/markdown",
+      });
+
+      try {
+        await s3Client.send(command);
+        contentKey = key;
+      } catch (error) {
+        console.error("Error uploading content to S3:", error);
+        throw new Error("Failed to upload content to S3");
       }
+    }
 
-      const { data: post, error: postError } = await supabase
-        .from("posts")
-        .insert([{ 
-          url, 
-          title, 
-          thumbnail, 
-          desc, 
-          authorId, 
-          class: classValue, 
-          subject, 
-          chapter_no, 
-          reading_time, 
+    const { data: post, error: postError } = await supabase
+      .from("posts")
+      .insert([
+        {
+          topic,
+          title,
+          thumbnail,
+          desc,
+          authorId,
+          class: classValue,
+          subject,
+          chapter_no,
+          reading_time,
           status,
-          content_key: contentKey // Store the S3 key in the database
-        }])
-        .select("id")
-        .single();
+          url: generatedUrl,
+          content_key: contentKey,
+        },
+      ])
+      .select("id")
+      .single();
 
-      if (postError) throw postError;
+    if (postError) throw postError;
 
-      const successMsg =
-        status === "published"
-          ? "Post published successfully"
-          : "Draft saved successfully";
+    const successMsg =
+      status === "published"
+        ? "Post published successfully"
+        : "Draft saved successfully";
 
-      return { statusText: "ok" as const, successMsg };
-    } else return { statusText: "fail" as const, errUrlMsg: errMsg };
+    return { statusText: "ok" as const, successMsg };
   } catch (error) {
     if (error instanceof ZodError) {
       const fieldErrors: Record<string, string> = {};

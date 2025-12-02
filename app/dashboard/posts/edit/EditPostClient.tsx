@@ -1,3 +1,4 @@
+// app/dashboard/posts/edit/EditPostClient.tsx
 "use client";
 
 import { useEffect, useState, startTransition, useActionState } from "react";
@@ -9,7 +10,6 @@ import {
   BookOpen,
   CheckCircle,
   Edit,
-  FilePenLine,
   FileText,
   Home,
   Layers3,
@@ -32,8 +32,9 @@ import {
 import { editPost } from "@/utils/post/edit/action";
 import { Tables } from "@/utils/supabase/types";
 import SectionsEditor from "../components/SectionsEditor";
-import type { Section, ListGroupBlock, CodeBlock } from "../components/sectionTypes";
+import type { Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
+import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
 
 export default function EditPostClient({
   post,
@@ -44,20 +45,20 @@ export default function EditPostClient({
   sections?: Section[];
   authorId: string | undefined;
 }) {
-  const [url] = useState(post.url);
+  const [topic] = useState(post.topic); // locked
+  const [url] = useState(post.url); // locked unique full URL
+
   const [title, setTitle] = useState(post.title);
   const [thumbnail, setThumbnail] = useState(post.thumbnail);
   const [desc, setDesc] = useState(post.desc);
-  const [classValue, setClassValue] = useState(post.class || "");
-  const [subject, setSubject] = useState(post.subject || "");
-  const [chapterNo, setChapterNo] = useState(
-    post.chapter_no?.toString() || ""
-  );
+  const [classValue] = useState(post.class || ""); // locked
+  const [subject] = useState(post.subject || ""); // locked
+  const [chapterNo] = useState(post.chapter_no?.toString() || ""); // locked
   const [readingTime, setReadingTime] = useState(
     post.reading_time?.toString() || ""
   );
   const [sections, setSections] = useState<Section[]>(initialSections || []);
-  const [charLeft, setCharLeft] = useState(150 - post.desc.length);
+  const [charLeft, setCharLeft] = useState(150 - (post.desc?.length || 0));
 
   const [editState, editAction, isEditing] = useActionState(editPost, {});
 
@@ -65,78 +66,13 @@ export default function EditPostClient({
     setCharLeft(150 - desc.length);
   }, [desc]);
 
-  // Convert sections → MDX
-  const convertSectionsToMDX = (sections: Section[]) => {
-    const validSections = sections.filter((section) =>
-      removeWhiteSpaces(section.title) !== "" ||
-      section.contentBlocks.some((block) => {
-        if (block.type === "paragraph") {
-          return removeWhiteSpaces(block.content) !== "";
-        }
-        if (block.type === "code") {
-          const cb = block as CodeBlock;
-          return (
-            removeWhiteSpaces(cb.content) !== "" ||
-            (cb.subtitle && removeWhiteSpaces(cb.subtitle) !== "")
-          );
-        }
-        if (block.type === "list-group") {
-          const lg = block as ListGroupBlock;
-          return (
-            removeWhiteSpaces(lg.subtitle) !== "" ||
-            lg.items.some((item) => removeWhiteSpaces(item.content) !== "")
-          );
-        }
-        return false;
-      })
-    );
-
-    return validSections
-      .map((section) => {
-        const title = removeWhiteSpaces(section.title);
-        const contentBlocksMDX: string[] = [];
-
-        section.contentBlocks.forEach((block) => {
-          if (block.type === "paragraph") {
-            if (removeWhiteSpaces(block.content)) {
-              contentBlocksMDX.push(removeWhiteSpaces(block.content));
-            }
-          } else if (block.type === "list-group") {
-            const lg = block as ListGroupBlock;
-            if (lg.subtitle && removeWhiteSpaces(lg.subtitle)) {
-              contentBlocksMDX.push(`### ${removeWhiteSpaces(lg.subtitle)}`);
-            }
-            const listItems = lg.items
-              .filter((item) => removeWhiteSpaces(item.content) !== "")
-              .map((item) => `- ${removeWhiteSpaces(item.content)}`);
-            if (listItems.length > 0) {
-              contentBlocksMDX.push(listItems.join("\n"));
-            }
-          } else if (block.type === "code") {
-            const cb = block as CodeBlock;
-            if (cb.subtitle && removeWhiteSpaces(cb.subtitle)) {
-              contentBlocksMDX.push(`### ${removeWhiteSpaces(cb.subtitle)}`);
-            }
-            if (removeWhiteSpaces(cb.content)) {
-              const language = cb.language ? cb.language : "";
-              contentBlocksMDX.push(
-                `\`\`\`${language}\n${cb.content.trim()}\n\`\`\``
-              );
-            }
-          }
-        });
-
-        const contentMDX = contentBlocksMDX.join("\n\n");
-
-        if (!title && !contentMDX) return "";
-        if (!title) return contentMDX;
-        if (!contentMDX) return `## ${title}`;
-
-        return `## ${title}\n\n${contentMDX}`;
-      })
-      .filter((section) => section !== "")
-      .join("\n\n");
-  };
+  const buildMDX = () =>
+    convertSectionsToMDXWithMeta(sections, {
+      title,
+      description: desc,
+      thumbnail,
+      reading_time: readingTime ? parseInt(readingTime) : null,
+    });
 
   const validateSections = () => {
     const hasContent = sections.some((section) =>
@@ -146,17 +82,17 @@ export default function EditPostClient({
           return removeWhiteSpaces(block.content) !== "";
         }
         if (block.type === "code") {
-          const cb = block as CodeBlock;
+          const cb = block as any;
           return (
-            removeWhiteSpaces(cb.content) !== "" ||
+            cb.content.trim() !== "" ||
             (cb.subtitle && removeWhiteSpaces(cb.subtitle) !== "")
           );
         }
         if (block.type === "list-group") {
-          const lg = block as ListGroupBlock;
+          const lg = block as any;
           return (
             removeWhiteSpaces(lg.subtitle) !== "" ||
-            lg.items.some((item) => removeWhiteSpaces(item.content) !== "")
+            lg.items.some((item: any) => removeWhiteSpaces(item.content) !== "")
           );
         }
         return false;
@@ -181,7 +117,7 @@ export default function EditPostClient({
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    formData.set("content", convertSectionsToMDX(sections));
+    formData.set("content", buildMDX());
 
     startTransition(() => {
       editAction(formData);
@@ -189,16 +125,16 @@ export default function EditPostClient({
   };
 
   useEffect(() => {
-    if (editState.successMsg) {
+    if ((editState as any).successMsg) {
       toast.success("Success", {
-        description: editState.successMsg,
+        description: (editState as any).successMsg,
         icon: <CheckCircle />,
       });
     }
 
-    if (editState.errorMsg) {
+    if ((editState as any).errorMsg) {
       toast.error("Error", {
-        description: editState.errorMsg,
+        description: (editState as any).errorMsg,
       });
     }
   }, [editState]);
@@ -219,7 +155,7 @@ export default function EditPostClient({
       />
 
       <ValidationErrorCard
-        errors={editState.errorMsg ? [editState.errorMsg] : []}
+        errors={(editState as any).errorMsg ? [(editState as any).errorMsg] : []}
       />
 
       <form className="space-y-8" onSubmit={handleSubmit}>
@@ -245,9 +181,7 @@ export default function EditPostClient({
                   <Spinner /> Updating...
                 </>
               ) : (
-                <>
-                  Update
-                </>
+                <>Update</>
               )}
             </Button>
           </div>
@@ -262,17 +196,27 @@ export default function EditPostClient({
           </CardHeader>
 
           <CardContent className="space-y-5">
+            {/* Locked structural URL (full) */}
             <EnhancedInput
-              tooltipContent="Enter the post URL"
+              tooltipContent="Canonical URL (locked)"
               type="text"
               name="url"
               value={url}
               onChange={() => {}}
-              inputGroupText="https://axomshiksha.com/"
-              className="-ml-2"
               readOnly
             />
 
+            {/* Topic (locked – structural) */}
+            <EnhancedInput
+              tooltipContent="Topic slug (locked after publish)"
+              type="text"
+              name="topic"
+              value={topic}
+              onChange={() => {}}
+              readOnly
+            />
+
+            {/* Title (editable) */}
             <Input
               name="title"
               value={title}
@@ -281,6 +225,7 @@ export default function EditPostClient({
               required
             />
 
+            {/* Description (editable) */}
             <EnhancedTextArea
               name="desc"
               value={desc}
@@ -292,6 +237,7 @@ export default function EditPostClient({
               }}
             />
 
+            {/* Thumbnail (editable) */}
             <FileUpload
               label="Post Thumbnail"
               imgType="thumbnail"
@@ -299,13 +245,15 @@ export default function EditPostClient({
               onUploaded={(url) => setThumbnail(url)}
             />
 
+            {/* Subject / Class / Chapter – locked (once published) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
                 name="class"
-                value={classValue}
-                onValueChange={(value) => setClassValue(value)}
+                value={classValue || ""}
+                disabled
+                onValueChange={() => {}}
               >
-                <SelectTrigger className="hover:cursor-pointer border-white/20 bg-background/60 w-full">
+                <SelectTrigger className="hover:cursor-not-allowed border-white/20 bg-background/60 w-full">
                   <SelectValue placeholder="Select Class" />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
@@ -319,10 +267,11 @@ export default function EditPostClient({
 
               <Select
                 name="subject"
-                value={subject}
-                onValueChange={(value) => setSubject(value)}
+                value={subject || ""}
+                disabled
+                onValueChange={() => {}}
               >
-                <SelectTrigger className="hover:cursor-pointer border-white/20 bg-background/60 w-full">
+                <SelectTrigger className="hover:cursor-not-allowed border-white/20 bg-background/60 w-full">
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
@@ -358,8 +307,7 @@ export default function EditPostClient({
                 name="chapter_no"
                 placeholder="Chapter Number"
                 value={chapterNo}
-                onChange={(e) => setChapterNo(e.target.value)}
-                min="1"
+                readOnly
               />
 
               <Input
@@ -373,16 +321,15 @@ export default function EditPostClient({
             </div>
 
             <input type="hidden" name="authorId" value={authorId || ""} />
+            <input type="hidden" name="thumbnail" value={thumbnail} />
+            <input type="hidden" name="class" value={classValue || ""} />
+            <input type="hidden" name="subject" value={subject || ""} />
+            <input type="hidden" name="chapter_no" value={chapterNo || ""} />
             <input
               type="hidden"
-              name="content"
-              value={convertSectionsToMDX(sections)}
+              name="reading_time"
+              value={readingTime || ""}
             />
-            <input type="hidden" name="thumbnail" value={thumbnail} />
-            <input type="hidden" name="class" value={classValue} />
-            <input type="hidden" name="subject" value={subject} />
-            <input type="hidden" name="chapter_no" value={chapterNo} />
-            <input type="hidden" name="reading_time" value={readingTime} />
             <input
               type="hidden"
               name="status"

@@ -28,29 +28,37 @@ export default function SearchPost() {
     if (!highlight.trim()) {
       return text;
     }
-    
+
     // Split the highlight into words and create a regex that matches any of them
-    const words = highlight.trim().split(/\s+/).filter(word => word.length > 0);
+    const words = highlight
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
     if (words.length === 0) {
       return text;
     }
-    
+
     // Escape special regex characters and join words with OR operator
-    const escapedWords = words.map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const regex = new RegExp(`(${escapedWords.join('|')})`, 'gi');
-    
+    const escapedWords = words.map((word) =>
+      word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    );
+    const regex = new RegExp(`(${escapedWords.join("|")})`, "gi");
+
     const parts = text.split(regex);
     return (
       <span>
-        {parts.filter(String).map((part, i) => (
+        {parts.filter(String).map((part, i) =>
           regex.test(part) ? (
-            <span key={i} className="bg-yellow-200 dark:bg-yellow-800 font-bold">
+            <span
+              key={i}
+              className="bg-yellow-200 dark:bg-yellow-800 font-bold"
+            >
               {part}
             </span>
           ) : (
             <span key={i}>{part}</span>
           )
-        ))}
+        )}
       </span>
     );
   };
@@ -64,12 +72,14 @@ export default function SearchPost() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Don't close dropdown if clicking on delete dialog or its children
-      if (event.target instanceof Element && 
-          (event.target.closest('[role="dialog"]') || 
-           event.target.closest('[data-state="open"]'))) {
+      if (
+        event.target instanceof Element &&
+        (event.target.closest('[role="dialog"]') ||
+          event.target.closest('[data-state="open"]'))
+      ) {
         return;
       }
-      
+
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node) &&
@@ -205,28 +215,45 @@ export default function SearchPost() {
                       >
                         <div className="flex justify-between items-center">
                           <div>
-                            <p className="font-medium">{highlightText(item.title, query)}</p>
+                            <p className="font-medium">
+                              {highlightText(item.title, query)}
+                            </p>
                             <div className="flex items-center gap-2 mt-1">
                               <p className="text-sm text-muted-foreground">
                                 Class {item.class}
                               </p>
-                              <span className="text-xs text-muted-foreground">•</span>
+                              <span className="text-xs text-muted-foreground">
+                                •
+                              </span>
                               <p className="text-sm text-muted-foreground">
                                 {item.subject}
                               </p>
-                              <span className="text-xs text-muted-foreground">•</span>
+                              <span className="text-xs text-muted-foreground">
+                                •
+                              </span>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(item.created_at).toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
+                                {new Date(item.created_at).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  }
+                                )}
                               </p>
                             </div>
                           </div>
                           <div className="flex space-x-1">
                             <Link
-                              href={`/author/posts/edit?slug=${item.url}`}
+                              href={`/dashboard/posts/edit?${
+                                item.subject ? `subject=${item.subject}` : ""
+                              }${item.class ? `&class=${item.class}` : ""}${
+                                item.chapter_no
+                                  ? `&chapter_no=${item.chapter_no}`
+                                  : ""
+                              }${item.topic ? `&topic=${item.topic}` : ""}${
+                                item.topic
+                              }`}
                               className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
                               title="Edit Post"
                             >

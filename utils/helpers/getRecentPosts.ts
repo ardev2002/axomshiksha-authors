@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { formatTimeAgo } from "@/utils/helpers/formatTimeAgo";
 import { getSession } from "./getSession";
 import { cache } from "react";
+import { generatePostUrl } from "./generatePostUrl";
 
 interface RecentPost {
   id: number;
@@ -22,7 +23,7 @@ export const getRecentPublishedPosts = cache(
 
     const { data: posts, error } = await sp
       .from("posts")
-      .select("id, title, created_at, url")
+      .select("id, title, subject, created_at, topic, class, chapter_no")
       .eq("authorId", authorId)
       .eq("status", "published")
       .order("created_at", { ascending: false })
@@ -32,12 +33,15 @@ export const getRecentPublishedPosts = cache(
       return [];
     }
 
-    return posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      date: formatTimeAgo(post.created_at),
-      url: post.url,
-    }));
+    return posts.map((post) => {
+      const { generatedUrl } = generatePostUrl(post.subject, post.class, post.chapter_no, post.topic);
+      return {
+        id: post.id,
+        title: post.title,
+        date: formatTimeAgo(post.created_at),
+        url: generatedUrl,
+      };
+    });
   }
 );
 
@@ -52,7 +56,7 @@ export const getRecentDraftPosts = cache(
 
     const { data: posts, error } = await sp
       .from("posts")
-      .select("id, title, created_at, url")
+      .select("id, title, created_at, subject, topic, class, chapter_no")
       .eq("authorId", authorId)
       .eq("status", "draft")
       .order("created_at", { ascending: false })
@@ -62,11 +66,14 @@ export const getRecentDraftPosts = cache(
       return [];
     }
 
-    return posts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      date: formatTimeAgo(post.created_at),
-      url: post.url,
-    }));
+    return posts.map((post) => {
+      const { generatedUrl } = generatePostUrl(post.subject, post.class, post.chapter_no, post.topic);
+      return {
+        id: post.id,
+        title: post.title,
+        date: formatTimeAgo(post.created_at),
+        url: generatedUrl,
+      };
+    });
   }
 );

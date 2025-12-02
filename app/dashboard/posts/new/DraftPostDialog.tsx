@@ -16,15 +16,9 @@ import Image from "next/image";
 import { Dispatch, SetStateAction } from "react";
 
 interface DraftPostDialogProps {
-  draftPost: Pick<
-    Tables<"posts">,
-    "url" | "title" | "authorId" | "status" | "thumbnail" | "class" | "subject"
-  > | null;
+  draftPost: Partial<Tables<"posts">> | null;
   setDraftPost: Dispatch<
-    SetStateAction<Pick<
-      Tables<"posts">,
-      "url" | "title" | "authorId" | "status" | "thumbnail" | "class" | "subject"
-    > | null>
+    SetStateAction<Partial<Tables<"posts">> | null>
   >;
   draftPostConfirmation: boolean;
   setDraftPostConfirmation: Dispatch<SetStateAction<boolean>>;
@@ -71,13 +65,6 @@ export default function DraftPostDialog(props: DraftPostDialogProps) {
 
                 {/* Meta — all in one line */}
                 <div className="flex items-center gap-3 min-w-0 text-[11px]">
-                  <div className="flex min-w-0 items-center gap-1">
-                    <span className="text-muted-foreground shrink-0">URL:</span>
-                    <span className="font-mono truncate min-w-0">
-                      {props.draftPost.url}
-                    </span>
-                  </div>
-
                   <div className="flex min-w-0 items-center gap-1">
                     <span className="text-muted-foreground shrink-0">
                       Class:

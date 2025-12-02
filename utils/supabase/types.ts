@@ -39,35 +39,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      post_likes: {
-        Row: {
-          created_at: string
-          id: number
-          post_id: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          post_id: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          post_id?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       posts: {
         Row: {
           authorId: string
@@ -77,12 +48,12 @@ export type Database = {
           created_at: string
           desc: string
           id: number
-          likes: number
           reading_time: number | null
           status: Database["public"]["Enums"]["Status"] | null
           subject: Database["public"]["Enums"]["Subject"] | null
           thumbnail: string
           title: string
+          topic: string
           url: string
           views: number
         }
@@ -94,13 +65,13 @@ export type Database = {
           created_at?: string
           desc: string
           id?: number
-          likes?: number
           reading_time?: number | null
           status?: Database["public"]["Enums"]["Status"] | null
           subject?: Database["public"]["Enums"]["Subject"] | null
           thumbnail: string
           title: string
-          url: string
+          topic: string
+          url?: string
           views?: number
         }
         Update: {
@@ -111,12 +82,12 @@ export type Database = {
           created_at?: string
           desc?: string
           id?: number
-          likes?: number
           reading_time?: number | null
           status?: Database["public"]["Enums"]["Status"] | null
           subject?: Database["public"]["Enums"]["Subject"] | null
           thumbnail?: string
           title?: string
+          topic?: string
           url?: string
           views?: number
         }

@@ -18,3 +18,10 @@ export type PostFieldTypes = {
 };
 
 export type Author = (typeof AUTHORS)[number]["id"];
+
+export interface URLOptions{
+  subject: Tables<"posts">["subject"] | null;
+  classNo: Tables<"posts">["class"] | null;
+  chapterNo: Tables<"posts">["chapter_no"] | null;
+  topic: string;
+}

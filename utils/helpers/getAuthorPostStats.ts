@@ -6,7 +6,6 @@ import { cache } from "react";
 interface AuthorPostStats {
   totalPosts: number;
   totalViews: number;
-  totalLikes: number;
   totalPublishedPosts: number;
   totalDraftPosts: number;
 }
@@ -22,7 +21,7 @@ export const getAuthorPostStats = cache(
 
     const { data: posts, error } = await sp
       .from("posts")
-      .select("id, views, likes, status")
+      .select("id, views, status")
       .eq("authorId", authorId);
 
     if (error) {
@@ -32,7 +31,6 @@ export const getAuthorPostStats = cache(
 
     const totalPosts = posts.length;
     const totalViews = posts.reduce((sum, post) => sum + (post.views || 0), 0);
-    const totalLikes = posts.reduce((sum, post) => sum + (post.likes || 0), 0);
 
     const totalPublishedPosts = posts.filter(
       (post) => post.status === "published"
@@ -44,7 +42,6 @@ export const getAuthorPostStats = cache(
     return {
       totalPosts,
       totalViews,
-      totalLikes,
       totalPublishedPosts,
       totalDraftPosts,
     };

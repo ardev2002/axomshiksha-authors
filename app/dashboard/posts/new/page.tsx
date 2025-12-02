@@ -1,3 +1,4 @@
+// app/dashboard/posts/new/page.tsx (or AddPostPage.tsx as you had)
 "use client";
 
 import {
@@ -43,11 +44,12 @@ import { cleanupOrphanedImages } from "@/utils/s3/cleanup";
 import DraftPostDialog from "./DraftPostDialog";
 import { Tables } from "@/utils/supabase/types";
 import SectionsEditor from "../components/SectionsEditor";
-import { Section, ListGroupBlock, CodeBlock } from "../components/sectionTypes";
+import { Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
+import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
 
 export default function AddPostPage() {
-  const [url, setUrl] = useState("");
+  const [topic, setTopic] = useState("");
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState("");
   const [desc, setDesc] = useState("");
@@ -72,16 +74,7 @@ export default function AddPostPage() {
 
   const [draftPostConfirmation, setDraftPostConfirmation] = useState(false);
   const [draftPost, setDraftPost] = useState<
-    Pick<
-      Tables<"posts">,
-      | "url"
-      | "title"
-      | "authorId"
-      | "status"
-      | "thumbnail"
-      | "class"
-      | "subject"
-    > | null
+    Partial<Tables<"posts">> | null
   >(null);
 
   useEffect(() => {
@@ -164,78 +157,13 @@ export default function AddPostPage() {
     }
   }, [publishState, draftState]);
 
-  // Convert sections → MDX
-  const convertSectionsToMDX = (sections: Section[]) => {
-    const validSections = sections.filter((section) =>
-      removeWhiteSpaces(section.title) !== "" ||
-      section.contentBlocks.some((block) => {
-        if (block.type === "paragraph") {
-          return removeWhiteSpaces(block.content) !== "";
-        }
-        if (block.type === "code") {
-          const cb = block as CodeBlock;
-          return (
-            removeWhiteSpaces(cb.content) !== "" ||
-            (cb.subtitle && removeWhiteSpaces(cb.subtitle) !== "")
-          );
-        }
-        if (block.type === "list-group") {
-          const lg = block as ListGroupBlock;
-          return (
-            removeWhiteSpaces(lg.subtitle) !== "" ||
-            lg.items.some((item) => removeWhiteSpaces(item.content) !== "")
-          );
-        }
-        return false;
-      })
-    );
-
-    return validSections
-      .map((section) => {
-        const title = removeWhiteSpaces(section.title);
-        const contentBlocksMDX: string[] = [];
-
-        section.contentBlocks.forEach((block) => {
-          if (block.type === "paragraph") {
-            if (removeWhiteSpaces(block.content)) {
-              contentBlocksMDX.push(removeWhiteSpaces(block.content));
-            }
-          } else if (block.type === "list-group") {
-            const lg = block as ListGroupBlock;
-            if (lg.subtitle && removeWhiteSpaces(lg.subtitle)) {
-              contentBlocksMDX.push(`### ${removeWhiteSpaces(lg.subtitle)}`);
-            }
-            const listItems = lg.items
-              .filter((item) => removeWhiteSpaces(item.content))
-              .map((item) => `- ${removeWhiteSpaces(item.content)}`);
-            if (listItems.length > 0) {
-              contentBlocksMDX.push(listItems.join("\n"));
-            }
-          } else if (block.type === "code") {
-            const cb = block as CodeBlock;
-            if (cb.subtitle && removeWhiteSpaces(cb.subtitle)) {
-              contentBlocksMDX.push(`### ${removeWhiteSpaces(cb.subtitle)}`);
-            }
-            if (removeWhiteSpaces(cb.content)) {
-              const language = cb.language ? cb.language : "";
-              contentBlocksMDX.push(
-                `\`\`\`${language}\n${removeWhiteSpaces(cb.content)}\n\`\`\``
-              );
-            }
-          }
-        });
-
-        const contentMDX = contentBlocksMDX.join("\n\n");
-
-        if (!title && !contentMDX) return "";
-        if (!title) return contentMDX;
-        if (!contentMDX) return `## ${title}`;
-
-        return `## ${title}\n\n${contentMDX}`;
-      })
-      .filter((section) => section !== "")
-      .join("\n\n");
-  };
+  const buildMDX = () =>
+    convertSectionsToMDXWithMeta(sections, {
+      title,
+      description: desc,
+      thumbnail,
+      reading_time: readingTime ? parseInt(readingTime) : null,
+    });
 
   const validateSections = () => {
     const hasContent = sections.some((section) =>
@@ -245,17 +173,17 @@ export default function AddPostPage() {
           return removeWhiteSpaces(block.content) !== "";
         }
         if (block.type === "code") {
-          const cb = block as CodeBlock;
+          const cb = block as any;
           return (
-            removeWhiteSpaces(cb.content) !== "" ||
+            cb.content.trim() !== "" ||
             (cb.subtitle && removeWhiteSpaces(cb.subtitle) !== "")
           );
         }
         if (block.type === "list-group") {
-          const lg = block as ListGroupBlock;
+          const lg = block as any;
           return (
             removeWhiteSpaces(lg.subtitle) !== "" ||
-            lg.items.some((item) => removeWhiteSpaces(item.content) !== "")
+            lg.items.some((item: any) => removeWhiteSpaces(item.content) !== "")
           );
         }
         return false;
@@ -287,7 +215,7 @@ export default function AddPostPage() {
 
   const handleFreshPublish = async () => {
     const formData = new FormData();
-    formData.append("url", url);
+    formData.append("topic", topic);
     formData.append("title", title);
     formData.append("thumbnail", thumbnail);
     formData.append("desc", desc);
@@ -295,7 +223,7 @@ export default function AddPostPage() {
     formData.append("subject", subject);
     formData.append("chapter_no", chapterNo);
     formData.append("reading_time", readingTime);
-    formData.append("content", convertSectionsToMDX(sections));
+    formData.append("content", buildMDX());
     formData.append("confirmed", "true");
 
     handleSubmit(formData, publish);
@@ -303,7 +231,7 @@ export default function AddPostPage() {
 
   const handleConfirmedPublish = async () => {
     const formData = new FormData();
-    formData.append("url", url);
+    formData.append("topic", topic);
     formData.append("title", title);
     formData.append("thumbnail", thumbnail);
     formData.append("desc", desc);
@@ -311,7 +239,7 @@ export default function AddPostPage() {
     formData.append("subject", subject);
     formData.append("chapter_no", chapterNo);
     formData.append("reading_time", readingTime);
-    formData.append("content", convertSectionsToMDX(sections));
+    formData.append("content", buildMDX());
 
     handleSubmit(formData, publish);
   };
@@ -371,7 +299,7 @@ export default function AddPostPage() {
               onClick={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget.form!);
-                formData.set("content", convertSectionsToMDX(sections));
+                formData.set("content", buildMDX());
                 handleSubmit(formData, draft);
               }}
               variant="outline"
@@ -387,7 +315,7 @@ export default function AddPostPage() {
               onClick={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget.form!);
-                formData.set("content", convertSectionsToMDX(sections));
+                formData.set("content", buildMDX());
                 handleSubmit(formData, publish);
               }}
               className="hover:cursor-pointer bg-violet-600 hover:bg-violet-700 text-white transition flex items-center gap-2"
@@ -420,18 +348,18 @@ export default function AddPostPage() {
           <CardContent className="space-y-5">
             <EnhancedInput
               type="text"
-              name="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="post-url"
+              name="topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="Topic slug"
               readOnly={isPublishing || isSavingDraft}
               tooltipContent="Use alphabets, numbers and hyphens only"
-              className="-ml-2"
-              inputGroupText="https://axomshiksha.com/"
             />
 
-            {publishState && publishState.errUrlMsg && (
-              <p className="text-red-500 text-sm">{publishState.errUrlMsg}</p>
+            {publishState && (publishState as any).errTopicMsg && (
+              <p className="text-red-500 text-sm">
+                {(publishState as any).errTopicMsg}
+              </p>
             )}
 
             <Input
@@ -551,11 +479,7 @@ export default function AddPostPage() {
         <input type="hidden" name="subject" value={subject} />
         <input type="hidden" name="chapter_no" value={chapterNo} />
         <input type="hidden" name="reading_time" value={readingTime} />
-        <input
-          type="hidden"
-          name="content"
-          value={convertSectionsToMDX(sections)}
-        />
+        <input type="hidden" name="content" value={buildMDX()} />
       </form>
     </>
   );

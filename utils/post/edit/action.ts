@@ -1,87 +1,100 @@
+// utils/post/edit/action.ts
 "use server";
 
 import * as z from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { fullPostSchema } from "@/utils/zod/schema";
 import { Database } from "@/utils/supabase/types";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/s3";
+import { urlToContentKey } from "@/utils/helpers/generatePostUrl";
 
 export interface EditPostState {
   successMsg?: string;
   errorMsg?: string;
 }
 
+const editPostSchema = z.object({
+  url: z.string().min(1),
+  topic: z.string().min(1),
+  title: z.string().min(1),
+  desc: z.string().optional().default(""),
+  thumbnail: z.string().optional().default(""),
+  authorId: z.string().optional().default(""),
+  class: z.string().optional().nullable(),
+  subject: z.string().optional().nullable(),
+  chapter_no: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v ? parseInt(v, 10) : null)),
+  reading_time: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v ? parseInt(v, 10) : null)),
+  content: z.string().optional().default(""),
+  status: z
+    .string()
+    .optional()
+    .default("draft") as unknown as z.ZodType<Database["public"]["Enums"]["Status"]>,
+});
+
 export async function editPost(
   state: EditPostState,
-  formData: FormData,
+  formData: FormData
 ): Promise<EditPostState> {
   const raw = Object.fromEntries(formData.entries());
-  const fullPost = {
-    url: raw.url as string,
-    title: raw.title as string,
-    desc: raw.desc as string,
-    thumbnail: raw.thumbnail as string,
-    authorId: raw.authorId as string,
-    class: raw.class as Database["public"]["Enums"]["Class"],
-    subject: raw.subject as Database["public"]["Enums"]["Subject"],
-    chapter_no: raw.chapter_no ? parseInt(raw.chapter_no as string) : null,
-    reading_time: raw.reading_time ? parseInt(raw.reading_time as string) : null,
-    content: raw.content as string,
-    status: raw.status as Database["public"]["Enums"]["Status"] || "draft", // Default to draft if not provided
-  };
 
   try {
-    const { url, title, desc, thumbnail, authorId, class: classValue, subject, chapter_no, reading_time, content, status } =
-      fullPostSchema.parse(fullPost);
+    const parsed = editPostSchema.parse(raw);
 
     const supabase = await createClient();
 
-    let contentKey = null;
-    if (content) {
-      const key = `md/${url}.mdx`;
+    // Upload new MDX content if provided
+    if (parsed.content) {
+      const key = urlToContentKey(parsed.url);
       const command = new PutObjectCommand({
-        Bucket: "axomshiksha",
+        Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME!,
         Key: key,
-        Body: content,
+        Body: parsed.content,
         ContentType: "text/markdown",
       });
-      
+
       try {
         await s3Client.send(command);
-        contentKey = key;
       } catch (error) {
         console.error("Error uploading content to S3:", error);
         throw new Error("Failed to upload content to S3");
       }
     }
 
-    const { data: postData, error: postError } = await supabase
-      .from("posts")
-      .update({ 
-        title, 
-        desc, 
-        authorId, 
-        class: classValue, 
-        subject, 
-        chapter_no, 
-        reading_time, 
-        thumbnail,
-        status,
-        content_key: contentKey
-      })
-      .eq("url", url)
-      .select("id")
-      .single();
+    // Lock structural identity: url, topic, subject, class, chapter_no
+    // We only update mutable fields: title, desc, thumbnail, reading_time, status
+    const { title, desc, thumbnail, reading_time, status } = parsed;
 
-    if (postError || !postData) throw new Error("Failed to update post.");
+    const { error: postError } = await supabase
+      .from("posts")
+      .update({
+        title,
+        desc,
+        thumbnail,
+        reading_time,
+        status,
+      })
+      .eq("url", parsed.url);
+
+    if (postError) {
+      console.error("Supabase update error:", postError);
+      throw new Error("Failed to update post.");
+    }
 
     return { successMsg: "Post updated successfully." };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error("Edit Post Error:", error);
+      console.error("Edit Post Zod Error:", error);
       return { errorMsg: "Invalid form data." };
     }
+    console.error("Edit Post Error:", error);
     return { errorMsg: "Failed to update post." };
   }
 }

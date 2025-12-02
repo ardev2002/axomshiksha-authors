@@ -1,5 +1,3 @@
-import { createClient } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, Heart, ChevronLeft, ChevronRight, Edit } from "lucide-react";
@@ -10,6 +8,8 @@ import DeletePostBtn from "./DeletePostBtn";
 import ValidationErrorCard from "@/components/custom/ValidationErrorCard";
 import PostMetaDate from "@/components/custom/PostMetaDate";
 import { getSession } from "@/utils/helpers/getSession";
+import { generatePostUrl } from "@/utils/helpers/generatePostUrl";
+import { deletePost } from "@/utils/post/delete/action";
 
 interface AuthorPostsPageProps {
   pagePromise: Promise<string | string[] | undefined>;
@@ -28,7 +28,7 @@ export default async function AuthorPostsPage({
 }: AuthorPostsPageProps) {
   // Use the params directly instead of resolving promises
   const isPageValid =
-    /^(?:|undefined|[1-9]\d*)$/.test(await pagePromise as string) === true;
+    /^(?:|undefined|[1-9]\d*)$/.test((await pagePromise) as string) === true;
 
   const page = await pagePromise.then(Number);
   const validPage = !isNaN(page) && page > 0 ? Math.floor(page) : 1;
@@ -42,14 +42,19 @@ export default async function AuthorPostsPage({
   const subjectParam = (await subjectPromise) as
     | Database["public"]["Enums"]["Subject"]
     | undefined;
-  const sortby = await sortbyPromise as "latest" | "oldest" | undefined;
+  const sortby = (await sortbyPromise) as "latest" | "oldest" | undefined;
 
   const session = await getSession();
   if (!session?.user) return null;
   const authorId = session.user.email?.split("@")[0] as string;
 
   const { posts, totalPages } = await getPaginatedPosts({
-    filters: { authorId: authorId, class: classParam, subject: subjectParam, status },
+    filters: {
+      authorId: authorId,
+      class: classParam,
+      subject: subjectParam,
+      status,
+    },
     page: validPage,
     sortOrder: sortby == "latest" ? "descending" : "ascending",
   });
@@ -88,9 +93,11 @@ export default async function AuthorPostsPage({
           >
             <Link
               className="flex items-center gap-1"
-              href={`/dashboard/posts${validPage > 1 ? `?page=${validPage - 1}` : ""}${
-                classParam ? `&class=${classParam}` : ""
-              }${subjectParam ? `&subject=${subjectParam}` : ""}${status ? `&status=${status}` : ""}${
+              href={`/dashboard/posts${
+                validPage > 1 ? `?page=${validPage - 1}` : ""
+              }${classParam ? `&class=${classParam}` : ""}${
+                subjectParam ? `&subject=${subjectParam}` : ""
+              }${status ? `&status=${status}` : ""}${
                 sortby ? `&sortby=${sortby}` : ""
               }`}
             >
@@ -112,9 +119,11 @@ export default async function AuthorPostsPage({
           >
             <Link
               className="flex items-center gap-1"
-              href={`/dashboard/posts${validPage ? `?page=${validPage + 1}` : ""}${
-                classParam ? `&class=${classParam}` : ""
-              }${subjectParam ? `&subject=${subjectParam}` : ""}${status ? `&status=${status}` : ""}${
+              href={`/dashboard/posts${
+                validPage ? `?page=${validPage + 1}` : ""
+              }${classParam ? `&class=${classParam}` : ""}${
+                subjectParam ? `&subject=${subjectParam}` : ""
+              }${status ? `&status=${status}` : ""}${
                 sortby ? `&sortby=${sortby}` : ""
               }`}
             >
@@ -135,15 +144,12 @@ async function PostCard({
   post: Tables<"posts">;
   page: number;
 }) {
-  async function deletePost(formData: FormData) {
-    "use server";
-    const postUrl = formData.get("postUrl") as string;
-
-    const supabase = await createClient();
-    await supabase.from("posts").delete().eq("url", postUrl);
-
-    revalidatePath(`/dashboard/posts?page=${page}`);
-  }
+  const { generatedUrl } = generatePostUrl(
+    post.subject,
+    post.class,
+    post.chapter_no,
+    post.topic
+  );
 
   const getStatusBadgeClass = (status: string | null) => {
     switch (status) {
@@ -162,11 +168,14 @@ async function PostCard({
     <Card className="border border-accent bg-background/70 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden hover:bg-background/80">
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5">
-          
           {/* Left Side */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <span className={`text-xs px-2 py-1 rounded-full ${getStatusBadgeClass(post.status)}`}>
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${getStatusBadgeClass(
+                  post.status
+                )}`}
+              >
                 {post.status?.charAt(0).toUpperCase() + post.status!.slice(1)}
               </span>
               <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
@@ -188,19 +197,15 @@ async function PostCard({
               <span className="flex items-center gap-1">
                 <Eye size={14} /> {post.views}
               </span>
-              <span className="flex items-center gap-1">
-                <Heart size={14} /> {post.likes}
-              </span>
               <PostMetaDate date={post.created_at} />
             </div>
           </div>
 
           {/* Right Side Buttons */}
           <div className="flex items-center gap-2">
-            
             {/* View Button */}
             <Link
-              href={`${process.env.NEXT_PUBLIC_APP_BASE_URL}/${post.url}`}
+              href={`/${generatedUrl}`}
               target="_blank"
               className="text-emerald-400 hover:bg-emerald-400/10 rounded-md p-2 transition-colors duration-200"
               title="View Post"
@@ -210,7 +215,11 @@ async function PostCard({
 
             {/* Edit Button */}
             <Link
-              href={`/dashboard/posts/edit?slug=${post.url}`}
+              href={`/dashboard/posts/edit?${
+                post.subject ? `subject=${post.subject}` : ""
+              }${post.class ? `&class=${post.class}` : ""}${
+                post.chapter_no ? `&chapter_no=${post.chapter_no}` : ""
+              }${post.topic ? `&topic=${post.topic}` : ""}`}
               className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
               title="Edit Post"
             >
@@ -219,10 +228,19 @@ async function PostCard({
 
             {/* Delete Button */}
             <form action={deletePost}>
-              <input type="hidden" name="postUrl" value={post.url} />
+              {post.subject && (
+                <input type="hidden" name="subject" value={post.subject} />
+              )}
+              {post.class && (
+                <input type="hidden" name="classNo" value={post.class} />
+              )}
+              {post.chapter_no && (
+                <input type="hidden" name="chapterNo" value={post.chapter_no} />
+              )}
+              <input type="hidden" name="topic" value={post.topic} />
+              <input type="hidden" name="page" value={page} />
               <DeletePostBtn postTitle={post.title} />
             </form>
-
           </div>
         </div>
       </CardContent>

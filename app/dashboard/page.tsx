@@ -58,7 +58,11 @@ export function BreadCrumbAndHeader() {
       <BreadCrumb
         paths={[
           { icon: <Home size={16} />, path: "/", title: "Home" },
-          { icon: <Layout size={16} />, path: "/dashboard", title: "Dashboard" },
+          {
+            icon: <Layout size={16} />,
+            path: "/dashboard",
+            title: "Dashboard",
+          },
         ]}
       />
       {/* Header */}
@@ -104,11 +108,6 @@ async function Stats() {
       icon: <PenLine className="w-5 h-5 text-amber-400" />,
     },
     {
-      label: "Total Likes",
-      value: statsData ? formatNumber(statsData.totalLikes) : "0",
-      icon: <Heart className="w-5 h-5 text-rose-400" />,
-    },
-    {
       label: "Total Views",
       value: statsData ? formatNumber(statsData.totalViews) : "0",
       icon: <Eye className="w-5 h-5 text-indigo-400" />,
@@ -119,7 +118,7 @@ async function Stats() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+      className="grid gap-5 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]"
     >
       {stats.map((item, i) => (
         <motion.div
@@ -193,7 +192,7 @@ async function RecentlyPublishedPosts() {
                   {post.date}
                 </span>
                 <Link
-                  href={`/post/${post.url}`}
+                  href={`/${post.url}`}
                   target="_blank"
                   className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground transition"
                 >

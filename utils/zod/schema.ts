@@ -3,7 +3,7 @@ import { AUTHORS } from "../CONSTANT";
 import { Database } from "@/utils/supabase/types";
 
 export const fullPostSchema = z.object({
-  url: z.string().trim().toLowerCase().regex(/^[a-z0-9-]+$/, "Invalid URL Slug"),
+  topic: z.string().trim(),
   status: z
     .enum([
       "draft",
@@ -24,7 +24,7 @@ export const fullPostSchema = z.object({
     .string()
     .min(10, "It must be atleast 10 characters long.")
     .max(300, "It must be less than 300 characters long"),
-  class: z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] as const),
+  class: z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] as const).nullable(),
   subject: z.enum([
     "Assamese",
     "English",
@@ -43,15 +43,10 @@ export const fullPostSchema = z.object({
     "Logic & Philosophy",
     "Political Science",
     "Statistics",
-    "Others"
-  ] as const),
-  chapter_no: z.number().optional(),
-  reading_time: z.number().optional(),
-  content: z.string().optional(), // Add content field
+    "Others",
+  ] as const).nullable(),
+  chapter_no: z.number().nullable(),
+  reading_time: z.number().nullable(),
+  content: z.string().optional(),
+  content_key: z.string().optional(),
 });
-
-export const blogUrlSchema = z
-  .string()
-  .regex(/^[a-z0-9-]+$/, "Invalid URL Slug")
-  .trim()
-  .toLowerCase();
