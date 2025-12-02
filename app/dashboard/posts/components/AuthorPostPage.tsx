@@ -205,7 +205,7 @@ async function PostCard({
           <div className="flex items-center gap-2">
             {/* View Button */}
             <Link
-              href={`/${generatedUrl}`}
+              href={`https://axomshiksha.com/${generatedUrl}`}
               target="_blank"
               className="text-emerald-400 hover:bg-emerald-400/10 rounded-md p-2 transition-colors duration-200"
               title="View Post"
