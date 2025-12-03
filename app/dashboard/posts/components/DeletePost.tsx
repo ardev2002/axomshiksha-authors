@@ -19,7 +19,7 @@ import { useActionState, useState } from "react";
 import { deletePost, DeletePostState } from "@/utils/post/delete/action";
 import { Database } from "@/utils/supabase/types";
 
-interface DeletePostBtnProps {
+interface DeletePostProps {
   postTitle: string;
   subject: Database["public"]["Enums"]["Subject"] | null;
   classValue: Database["public"]["Enums"]["Class"] | null;
@@ -34,7 +34,7 @@ export default function DeletePost({
   chapter_no,
   topic,
   page,
-}: DeletePostBtnProps) {
+}: DeletePostProps) {
   const [open, setOpen] = useState(false);
   const [state, action, isPending] = useActionState<DeletePostState, FormData>(deletePost, { success: false });
   return (

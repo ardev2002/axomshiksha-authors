@@ -13,7 +13,7 @@ import {
   GetPaginatedPostsResult,
 } from "@/utils/post/get/action";
 import Link from "next/link";
-import DeletePostBtn from "./DeletePost";
+import DeletePost from "./DeletePost";
 
 export default function SearchPost() {
   const [open, setOpen] = useState(false);
@@ -260,7 +260,14 @@ export default function SearchPost() {
                               <Edit size={18} />
                             </Link>
                             <div onClick={(e) => e.stopPropagation()}>
-                              <DeletePostBtn postTitle={item.title} />
+                              <DeletePost
+                                postTitle={item.title}
+                                subject={item.subject}
+                                classValue={item.class}
+                                chapter_no={item.chapter_no}
+                                topic={item.topic}
+                                page={page}
+                              />
                             </div>
                           </div>
                         </div>
