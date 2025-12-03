@@ -13,7 +13,7 @@ import {
   GetPaginatedPostsResult,
 } from "@/utils/post/get/action";
 import Link from "next/link";
-import DeletePostBtn from "./DeletePostBtn";
+import DeletePostBtn from "./DeletePost";
 
 export default function SearchPost() {
   const [open, setOpen] = useState(false);

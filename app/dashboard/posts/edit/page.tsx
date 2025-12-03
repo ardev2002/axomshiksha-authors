@@ -1,4 +1,3 @@
-// app/dashboard/posts/edit/page.tsx
 import { getSinglePost } from "@/utils/post/get/action";
 import EditPostClient from "@/app/dashboard/posts/edit/EditPostClient";
 import { Author } from "@/utils/types";

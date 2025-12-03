@@ -1,4 +1,3 @@
-// app/dashboard/posts/new/page.tsx (or AddPostPage.tsx as you had)
 "use client";
 
 import {

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import AuthorPostsPage from "./components/AuthorPostPage";
 import BreadCrumb from "@/components/custom/BreadCrumb";
-import { BookOpen, Home, UserPen, Plus, Filter, Layout } from "lucide-react";
+import { BookOpen, Home, Plus, Filter, Layout } from "lucide-react";
 import FilterSheet from "./components/FilterSheet";
 import AuthorPostCardSkeleton from "./components/AuthorPostCardSkeleton";
 import { Button } from "@/components/ui/button";

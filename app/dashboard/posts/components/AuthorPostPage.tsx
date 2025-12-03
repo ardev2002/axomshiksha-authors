@@ -1,15 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Heart, ChevronLeft, ChevronRight, Edit } from "lucide-react";
+import { Eye, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import { getPaginatedPosts } from "@/utils/post/get/action";
 import Link from "next/link";
 import { Database, Tables } from "@/utils/supabase/types";
-import DeletePostBtn from "./DeletePostBtn";
 import ValidationErrorCard from "@/components/custom/ValidationErrorCard";
 import PostMetaDate from "@/components/custom/PostMetaDate";
 import { getSession } from "@/utils/helpers/getSession";
 import { generatePostUrl } from "@/utils/helpers/generatePostUrl";
-import { deletePost } from "@/utils/post/delete/action";
+import DeletePost from "./DeletePost";
 
 interface AuthorPostsPageProps {
   pagePromise: Promise<string | string[] | undefined>;
@@ -227,20 +226,14 @@ async function PostCard({
             </Link>
 
             {/* Delete Button */}
-            <form action={deletePost}>
-              {post.subject && (
-                <input type="hidden" name="subject" value={post.subject} />
-              )}
-              {post.class && (
-                <input type="hidden" name="classNo" value={post.class} />
-              )}
-              {post.chapter_no && (
-                <input type="hidden" name="chapterNo" value={post.chapter_no} />
-              )}
-              <input type="hidden" name="topic" value={post.topic} />
-              <input type="hidden" name="page" value={page} />
-              <DeletePostBtn postTitle={post.title} />
-            </form>
+            <DeletePost
+              postTitle={post.title}
+              subject={post.subject}
+              classValue={post.class}
+              chapter_no={post.chapter_no}
+              topic={post.topic}
+              page={page}
+            />
           </div>
         </div>
       </CardContent>

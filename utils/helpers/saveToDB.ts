@@ -150,7 +150,7 @@ export async function saveToDB(
     await fetch("https://www.axomshiksha.com/api/revalidate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret: process.env.REVALIDATE_SECRET!, tag: "posts" }),
+      body: JSON.stringify({ secret: process.env.REVALIDATE_SECRET! }),
     })
 
     return { statusText: "ok" as const, successMsg };

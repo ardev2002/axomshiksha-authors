@@ -7,7 +7,11 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { revalidatePath } from "next/cache";
 import { Database, Tables } from "@/utils/supabase/types";
 
-export async function deletePost(formData: FormData) {
+export interface DeletePostState{
+  success: boolean;
+}
+
+export async function deletePost(state: DeletePostState, formData: FormData):Promise<DeletePostState> {
   const subject =
     (formData.get("subject") as Database["public"]["Enums"]["Subject"]) ||
     null;
@@ -45,14 +49,14 @@ export async function deletePost(formData: FormData) {
 
         try {
           await s3Client.send(command);
+          revalidatePath(`/dashboard/posts?page=${page}`);
+          return { success: true }
         } catch (s3Error) {
-          console.error("Error deleting content from S3:", s3Error);
-          // Don't throw error as the database deletion was successful
+          return { success: false }
         }
     }
+    return { success: false };
   } catch (error) {
-    console.error("Error deleting post:", error);
+    return { success: false };
   }
-
-  revalidatePath(`/dashboard/posts?page=${page}`);
 }
