@@ -152,7 +152,7 @@ export async function saveToDB(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ secret: process.env.REVALIDATE_SECRET!, tag: "posts" }),
     })
-    
+
     return { statusText: "ok" as const, successMsg };
   } catch (error) {
     if (error instanceof ZodError) {
