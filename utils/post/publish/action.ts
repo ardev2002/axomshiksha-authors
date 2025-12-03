@@ -51,7 +51,7 @@ export async function publishPost(
     reading_time: raw.reading_time
       ? parseInt(raw.reading_time as string)
       : null,
-    content: raw.content as string, // full MDX with front matter
+    content: raw.content as string,
     status: "published",
   };
 

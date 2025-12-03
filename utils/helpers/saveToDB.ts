@@ -147,6 +147,12 @@ export async function saveToDB(
         ? "Post published successfully"
         : "Draft saved successfully";
 
+    await fetch("https://www.axomshiksha.com/api/revalidate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: process.env.REVALIDATE_SECRET!, tag: "posts" }),
+    })
+    
     return { statusText: "ok" as const, successMsg };
   } catch (error) {
     if (error instanceof ZodError) {

@@ -192,7 +192,7 @@ async function RecentlyPublishedPosts() {
                   {post.date}
                 </span>
                 <Link
-                  href={`/${post.url}`}
+                  href={`https://axomshiksha.com/${post.url}`}
                   target="_blank"
                   className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground transition"
                 >
