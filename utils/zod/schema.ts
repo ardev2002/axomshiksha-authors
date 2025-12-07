@@ -1,6 +1,5 @@
 import * as z from "zod";
 import { AUTHORS } from "../CONSTANT";
-import { Database } from "@/utils/supabase/types";
 
 export const fullPostSchema = z.object({
   topic: z.string().trim(),
@@ -49,4 +48,5 @@ export const fullPostSchema = z.object({
   reading_time: z.number().nullable().optional(),
   content: z.string().optional(),
   content_key: z.string().optional(),
+  scheduled_at: z.string().optional(), // Added scheduled_at field
 });

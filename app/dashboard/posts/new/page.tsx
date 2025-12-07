@@ -20,8 +20,11 @@ import {
   Home,
   Rocket,
   Layout,
+  Clock,
 } from "lucide-react";
 import { publishPost } from "@/utils/post/publish/action";
+import { saveDraft } from "@/utils/post/draft/action";
+import { schedulePost } from "@/utils/post/schedule/action"; // Added import
 import {
   Select,
   SelectContent,
@@ -38,7 +41,6 @@ import ValidationErrorCard from "@/components/custom/ValidationErrorCard";
 import FileUpload from "@/components/custom/FileUpload";
 import BreadCrumb from "@/components/custom/BreadCrumb";
 import { SavedPostResult } from "@/utils/helpers/saveToDB";
-import { saveDraft } from "@/utils/post/draft/action";
 import { cleanupOrphanedImages } from "@/utils/s3/cleanup";
 import DraftPostDialog from "./DraftPostDialog";
 import { Tables } from "@/utils/supabase/types";
@@ -47,6 +49,7 @@ import { CodeBlock, Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
 import { SUBJECTS } from "@/utils/CONSTANT";
+import SchedulePost from "./SchedulePost";
 
 export default function AddPostPage() {
   const [topic, setTopic] = useState("");
@@ -72,10 +75,19 @@ export default function AddPostPage() {
     FormData
   >(saveDraft, { statusText: "not_submitted" });
 
+  const [scheduleState, schedule, isScheduling] = useActionState<
+    SavedPostResult,
+    FormData
+  >(schedulePost, { statusText: "not_submitted" });
+
   const [draftPostConfirmation, setDraftPostConfirmation] = useState(false);
   const [draftPost, setDraftPost] = useState<
     Partial<Tables<"posts">> | null
   >(null);
+
+  // Added state for schedule post
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
 
   useEffect(() => {
     setCharLeft(300 - desc.length);
@@ -129,13 +141,17 @@ export default function AddPostPage() {
   const allErrors =
     publishState?.fieldErrors
       ? Object.entries(publishState.fieldErrors).map(
-          ([field, message]) => `${field}: ${message}`
-        )
+        ([field, message]) => `${field}: ${message}`
+      )
       : draftState?.fieldErrors
-      ? Object.entries(draftState.fieldErrors).map(
+        ? Object.entries(draftState.fieldErrors).map(
           ([field, message]) => `${field}: ${message}`
         )
-      : [];
+        : scheduleState?.fieldErrors // Added scheduleState to errors
+          ? Object.entries(scheduleState.fieldErrors).map(
+            ([field, message]) => `${field}: ${message}`
+          )
+          : [];
 
   useEffect(() => {
     if (publishState?.successMsg) {
@@ -148,6 +164,11 @@ export default function AddPostPage() {
         description: draftState.successMsg,
         icon: <CheckCircle />,
       });
+    } else if (scheduleState?.successMsg) {
+      toast.success("Success", {
+        description: scheduleState.successMsg,
+        icon: <CheckCircle />,
+      });
     } else if (
       publishState?.requiresConfirmation &&
       publishState?.draftPost
@@ -155,7 +176,7 @@ export default function AddPostPage() {
       setDraftPost(publishState.draftPost);
       setDraftPostConfirmation(true);
     }
-  }, [publishState, draftState]);
+  }, [publishState, draftState, scheduleState]); // Added scheduleState to dependencies
 
   const buildMDX = () =>
     convertSectionsToMDXWithMeta(sections, {
@@ -247,6 +268,32 @@ export default function AddPostPage() {
     handleSubmit(formData, publish);
   };
 
+  // Updated handler for scheduling
+  const handleSchedulePost = (date: Date) => {
+    setScheduledDate(date);
+    setIsScheduleDialogOpen(false);
+
+    // Convert to UTC string
+    const utcString = date.toISOString();
+
+    // Submit the form with scheduled date
+    const formData = new FormData();
+    formData.append("topic", topic);
+    formData.append("title", title);
+    formData.append("thumbnail", thumbnail);
+    formData.append("desc", desc);
+    formData.append("class", classValue);
+    formData.append("subject", subject);
+    formData.append("chapter_no", chapterNo);
+    formData.append("reading_time", readingTime);
+    formData.append("content", buildMDX());
+    formData.append("scheduled_at", utcString); // Add UTC string to form data
+
+    startTransition(() => {
+      schedule(formData);
+    });
+  };
+
   useEffect(() => {
     if (publishState?.successMsg || draftState?.successMsg) {
       isPostSavedRef.current = true;
@@ -284,6 +331,13 @@ export default function AddPostPage() {
         handleConfirmedPublish={handleConfirmedPublish}
       />
 
+      <SchedulePost
+        open={isScheduleDialogOpen}
+        onOpenChange={setIsScheduleDialogOpen}
+        onSchedule={handleSchedulePost}
+        initialDate={scheduledDate || undefined}
+      />
+
       <form className="space-y-8">
         <div className="flex flex-wrap gap-3 items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
@@ -295,10 +349,10 @@ export default function AddPostPage() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Button
               type="submit"
-              disabled={isSavingDraft || isPublishing}
+              disabled={isSavingDraft || isPublishing || isScheduling}
               onClick={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget.form!);
@@ -312,9 +366,23 @@ export default function AddPostPage() {
               Save Draft
             </Button>
 
+            {/* Added Schedule button */}
+            <Button
+              type="button"
+              disabled={isPublishing || isSavingDraft || isScheduling}
+              onClick={(e) => {
+                e.preventDefault();
+                setIsScheduleDialogOpen(true);
+              }}
+              variant="outline"
+              className="hover:cursor-pointer border-violet-500/30 text-violet-500 hover:bg-violet-500/10 flex items-center gap-2"
+            >
+              {!isScheduling ? (<><Clock size={16} /> Schedule</>) : (<><Spinner /> Scheduling</>)}
+            </Button>
+
             <Button
               type="submit"
-              disabled={isPublishing || isSavingDraft}
+              disabled={isPublishing || isSavingDraft || isScheduling}
               onClick={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget.form!);
@@ -330,6 +398,7 @@ export default function AddPostPage() {
               ) : (
                 <>
                   <Rocket size={16} />
+                  Publish
                 </>
               )}
             </Button>

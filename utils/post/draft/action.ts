@@ -4,7 +4,6 @@
 import { generatePostUrl } from "@/utils/helpers/generatePostUrl";
 import { SavedPostResult, saveToDB } from "@/utils/helpers/saveToDB";
 import { Database, Tables } from "@/utils/supabase/types";
-import { URLOptions } from "@/utils/types";
 
 export async function saveDraft(
   state: SavedPostResult,
@@ -30,7 +29,19 @@ export async function saveDraft(
     topic
   );
 
-  const draft = {
+  const draft: Pick<
+    Tables<"posts">,
+    | "topic"
+    | "title"
+    | "desc"
+    | "class"
+    | "subject"
+    | "chapter_no"
+    | "reading_time"
+    | "status"
+    | "thumbnail"
+    | "scheduled_at"
+  > & { content: string } = {
     topic,
     title: raw.title as string,
     thumbnail: raw.thumbnail as string,
@@ -43,7 +54,8 @@ export async function saveDraft(
       : null,
     content: raw.content as string,
     status: "draft" as Database["public"]["Enums"]["Status"],
+    scheduled_at: null, // Draft posts don't have a scheduled time
   };
 
-  return await saveToDB(draft, generatedUrl, urlOptions as unknown as URLOptions);
+  return await saveToDB(draft, generatedUrl, urlOptions);
 }

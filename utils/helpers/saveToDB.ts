@@ -33,6 +33,7 @@ export async function saveToDB(
     | "reading_time"
     | "status"
     | "thumbnail"
+    | "scheduled_at"
   > & { content?: string },
   generatedUrl?: string,
   urlOptions?: URLOptions,
@@ -50,6 +51,7 @@ export async function saveToDB(
       chapter_no,
       reading_time,
       content,
+      scheduled_at, // Added scheduled_at
     } = fullPostSchema.parse(rawPost);
 
     let isAvailable = true;
@@ -96,7 +98,7 @@ export async function saveToDB(
 
     let contentKey: string | null = null;
 
-    if (content && (status === "published" || status === "draft")) {
+    if (content && (status === "published" || status === "draft" || status === "scheduled")) {
       const base = generatedUrl && generatedUrl.trim().length > 0
         ? generatedUrl
         : topic;
@@ -135,6 +137,7 @@ export async function saveToDB(
           status,
           url: generatedUrl,
           content_key: contentKey,
+          scheduled_at, // Added scheduled_at
         },
       ])
       .select("id")
@@ -145,6 +148,8 @@ export async function saveToDB(
     const successMsg =
       status === "published"
         ? "Post published successfully"
+        : status === "scheduled"
+        ? "Post scheduled successfully"
         : "Draft saved successfully";
 
     await fetch("https://www.axomshiksha.com/api/revalidate", {

@@ -56,6 +56,7 @@ export type Database = {
           topic: string
           url: string
           views: number
+          scheduled_at: string | null // Added scheduled_at field
         }
         Insert: {
           authorId: string
@@ -73,6 +74,7 @@ export type Database = {
           topic: string
           url?: string
           views?: number
+          scheduled_at?: string | null // Added scheduled_at field
         }
         Update: {
           authorId?: string
@@ -90,6 +92,7 @@ export type Database = {
           topic?: string
           url?: string
           views?: number
+          scheduled_at?: string | null // Added scheduled_at field
         }
         Relationships: []
       }

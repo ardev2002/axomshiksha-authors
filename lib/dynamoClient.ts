@@ -9,4 +9,4 @@ const client = new DynamoDBClient({
   }
 });
 
-export const docClient = DynamoDBDocumentClient.from(client);
+export const db = DynamoDBDocumentClient.from(client);

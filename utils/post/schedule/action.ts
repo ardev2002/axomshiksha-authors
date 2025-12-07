@@ -1,15 +1,15 @@
-// utils/post/publish/action.ts
+// utils/post/schedule/action.ts
 "use server";
 
 import { Database, Tables } from "@/utils/supabase/types";
 import { SavedPostResult, saveToDB } from "@/utils/helpers/saveToDB";
 import { generatePostUrl } from "@/utils/helpers/generatePostUrl";
 
-export async function publishPost(
+export async function schedulePost(
   state: SavedPostResult,
   formData: FormData
 ): Promise<SavedPostResult> {
-  const raw = Object.fromEntries(formData);
+  const raw = Object.fromEntries(formData.entries());
 
   const subject = raw.subject as
     | Database["public"]["Enums"]["Subject"]
@@ -29,7 +29,7 @@ export async function publishPost(
     topic
   );
 
-  const publishablePost: Pick<
+  const scheduledPost: Pick<
     Tables<"posts">,
     | "topic"
     | "title"
@@ -53,11 +53,9 @@ export async function publishPost(
       ? parseInt(raw.reading_time as string)
       : null,
     content: raw.content as string,
-    status: "published",
-    scheduled_at: null, // Published posts don't have a scheduled time
+    status: "scheduled",
+    scheduled_at: raw.scheduled_at as string,
   };
 
-  const confirmed = raw.confirmed === "true";
-
-  return await saveToDB(publishablePost, generatedUrl, urlOptions, confirmed);
+  return await saveToDB(scheduledPost, generatedUrl, urlOptions, false);
 }
