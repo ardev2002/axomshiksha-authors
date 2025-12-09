@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import BreadCrumb from "@/components/custom/BreadCrumb";
-import { Home, UserPen, BookOpen, Edit, FileText, Pencil, FilePenLine, Layers3 } from "lucide-react";
+import { Home, UserPen, BookOpen, Edit, FileText, FilePenLine, Layers3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function EditPostLoading() {

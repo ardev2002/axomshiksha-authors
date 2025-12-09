@@ -43,22 +43,19 @@ import BreadCrumb from "@/components/custom/BreadCrumb";
 import { SavedPostResult } from "@/utils/helpers/saveToDB";
 import { cleanupOrphanedImages } from "@/utils/s3/cleanup";
 import DraftPostDialog from "./DraftPostDialog";
-import { Tables } from "@/utils/supabase/types";
 import SectionsEditor from "../components/SectionsEditor";
 import { CodeBlock, Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
-import { SUBJECTS } from "@/utils/CONSTANT";
+import { SUBJECTS_BY_LEVEL, LEVELS } from "@/utils/CONSTANT";
 import SchedulePost from "./SchedulePost";
-
 export default function AddPostPage() {
   const [topic, setTopic] = useState("");
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState("");
-  const [desc, setDesc] = useState("");
+  const [description, setDescription] = useState("");
   const [charLeft, setCharLeft] = useState(300);
-
-  const [classValue, setClassValue] = useState("");
+  const [classLevel, setClassLevel] = useState("");
   const [subject, setSubject] = useState("");
   const [chapterNo, setChapterNo] = useState("");
   const [readingTime, setReadingTime] = useState("");
@@ -82,7 +79,7 @@ export default function AddPostPage() {
 
   const [draftPostConfirmation, setDraftPostConfirmation] = useState(false);
   const [draftPost, setDraftPost] = useState<
-    Partial<Tables<"posts">> | null
+    Record<string, any> | null
   >(null);
 
   // Added state for schedule post
@@ -90,8 +87,13 @@ export default function AddPostPage() {
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    setCharLeft(300 - desc.length);
-  }, [desc]);
+    setCharLeft(300 - description.length);
+  }, [description]);
+
+  // Reset subject when class changes
+  useEffect(() => {
+    setSubject("");
+  }, [classLevel]);
 
   // track uploaded images for cleanup
   const uploadedImagesRef = useRef<Set<string>>(new Set());
@@ -181,10 +183,11 @@ export default function AddPostPage() {
   const buildMDX = () =>
     convertSectionsToMDXWithMeta(sections, {
       title,
-      description: desc,
-      chapter_no: parseInt(chapterNo),
-      class: classValue,
-      reading_time: readingTime ? parseInt(readingTime) : null,
+      description: description,
+      chapterNo: parseInt(chapterNo),
+      classLevel,
+      createdAt: new Date().toISOString(),
+      readingTime: readingTime ? parseInt(readingTime) : null,
       subject,
       thumbnail,
     });
@@ -214,27 +217,7 @@ export default function AddPostPage() {
       })
     );
 
-    if (!hasContent) {
-      toast.error("Validation Error", {
-        description:
-          "Please add at least one section with content before submitting.",
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = (
-    formData: FormData,
-    action: (formData: FormData) => void
-  ) => {
-    if (!validateSections()) return false;
-
-    startTransition(() => {
-      action(formData);
-    });
-    return true;
+    return hasContent;
   };
 
   const handleFreshPublish = async () => {
@@ -242,15 +225,16 @@ export default function AddPostPage() {
     formData.append("topic", topic);
     formData.append("title", title);
     formData.append("thumbnail", thumbnail);
-    formData.append("desc", desc);
-    formData.append("class", classValue);
+    formData.append("description", description);
+    formData.append("classLevel", classLevel);
     formData.append("subject", subject);
-    formData.append("chapter_no", chapterNo);
-    formData.append("reading_time", readingTime);
+    formData.append("chapterNo", chapterNo);
+    formData.append("readingTime", readingTime);
     formData.append("content", buildMDX());
     formData.append("confirmed", "true");
-
-    handleSubmit(formData, publish);
+    startTransition(() => {
+      publish(formData);
+    });
   };
 
   const handleConfirmedPublish = async () => {
@@ -258,14 +242,15 @@ export default function AddPostPage() {
     formData.append("topic", topic);
     formData.append("title", title);
     formData.append("thumbnail", thumbnail);
-    formData.append("desc", desc);
-    formData.append("class", classValue);
+    formData.append("description", description);
+    formData.append("classLevel", classLevel);
     formData.append("subject", subject);
-    formData.append("chapter_no", chapterNo);
-    formData.append("reading_time", readingTime);
+    formData.append("chapterNo", chapterNo);
+    formData.append("readingTime", readingTime);
     formData.append("content", buildMDX());
-
-    handleSubmit(formData, publish);
+    startTransition(() => {
+      publish(formData);
+    });
   };
 
   // Updated handler for scheduling
@@ -281,13 +266,13 @@ export default function AddPostPage() {
     formData.append("topic", topic);
     formData.append("title", title);
     formData.append("thumbnail", thumbnail);
-    formData.append("desc", desc);
-    formData.append("class", classValue);
+    formData.append("description", description);
+    formData.append("classLevel", classLevel);
     formData.append("subject", subject);
-    formData.append("chapter_no", chapterNo);
-    formData.append("reading_time", readingTime);
+    formData.append("chapterNo", chapterNo);
+    formData.append("readingTime", readingTime);
     formData.append("content", buildMDX());
-    formData.append("scheduled_at", utcString); // Add UTC string to form data
+    formData.append("scheduledAt", utcString); // Add UTC string to form data
 
     startTransition(() => {
       schedule(formData);
@@ -352,13 +337,8 @@ export default function AddPostPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <Button
               type="submit"
-              disabled={isSavingDraft || isPublishing || isScheduling}
-              onClick={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget.form!);
-                formData.set("content", buildMDX());
-                handleSubmit(formData, draft);
-              }}
+              disabled={isSavingDraft || isPublishing || isScheduling || !validateSections()}
+              formAction={draft}
               variant="outline"
               className="hover:cursor-pointer"
             >
@@ -369,7 +349,7 @@ export default function AddPostPage() {
             {/* Added Schedule button */}
             <Button
               type="button"
-              disabled={isPublishing || isSavingDraft || isScheduling}
+              disabled={isPublishing || isSavingDraft || isScheduling || !validateSections()}
               onClick={(e) => {
                 e.preventDefault();
                 setIsScheduleDialogOpen(true);
@@ -382,13 +362,8 @@ export default function AddPostPage() {
 
             <Button
               type="submit"
-              disabled={isPublishing || isSavingDraft || isScheduling}
-              onClick={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget.form!);
-                formData.set("content", buildMDX());
-                handleSubmit(formData, publish);
-              }}
+              disabled={isPublishing || isSavingDraft || isScheduling || !validateSections()}
+              formAction={publish}
               className="hover:cursor-pointer bg-violet-600 hover:bg-violet-700 text-white transition flex items-center gap-2"
             >
               {isPublishing ? (
@@ -423,7 +398,7 @@ export default function AddPostPage() {
               name="topic"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="Topic slug"
+              placeholder="Topic"
               readOnly={isPublishing || isSavingDraft}
               tooltipContent="Use alphabets, numbers and hyphens only"
             />
@@ -436,7 +411,7 @@ export default function AddPostPage() {
 
             <Input
               name="title"
-              placeholder="Post Title"
+              placeholder="Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               readOnly={isPublishing}
@@ -444,10 +419,10 @@ export default function AddPostPage() {
 
             <EnhancedTextArea
               placeholder="Short Description (max 300 chars)"
-              name="desc"
-              value={desc}
+              name="description"
+              value={description}
               charLeft={charLeft}
-              onChange={({ target }) => setDesc(target.value)}
+              onChange={({ target }) => setDescription(target.value)}
               maxLength={300}
               className="text-pretty"
             />
@@ -468,17 +443,17 @@ export default function AddPostPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
-                name="class"
-                value={classValue}
-                onValueChange={(value) => setClassValue(value)}
+                name="classLevel"
+                value={classLevel}
+                onValueChange={(value) => setClassLevel(value)}
               >
                 <SelectTrigger className="hover:cursor-pointer border-white/20 bg-background/60 w-full">
-                  <SelectValue placeholder="Select Class" />
+                  <SelectValue placeholder="Select Class Level" />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem value={String(num)} key={num}>
-                      Class {num}
+                  {LEVELS.map((level) => (
+                    <SelectItem key={level.id} value={level.id}>
+                      {level.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -488,33 +463,33 @@ export default function AddPostPage() {
                 name="subject"
                 value={subject}
                 onValueChange={(value) => setSubject(value)}
+                disabled={!classLevel}
               >
-                <SelectTrigger className="hover:cursor-pointer border-white/20 bg-background/60 w-full">
-                  <SelectValue placeholder="Select Subject" />
+                <SelectTrigger className={`hover:cursor-pointer border-white/20 bg-background/60 w-full ${!classLevel ? 'opacity-50' : ''}`}>
+                  <SelectValue placeholder={"Select Subject"} />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
-                  {
-                    Object.entries(SUBJECTS).map(([key, value]) => (
-                      <SelectItem value={value} key={value}>
-                        {key}
-                      </SelectItem>
-                    ))
-                  }
+                  {classLevel && SUBJECTS_BY_LEVEL[classLevel as keyof typeof SUBJECTS_BY_LEVEL]?.map((subjectOption) => (
+                    <SelectItem key={subjectOption.id} value={subjectOption.id}>
+                      {subjectOption.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
               <Input
                 type="number"
-                name="chapter_no"
+                name="chapterNo"
                 placeholder="Chapter Number"
                 value={chapterNo}
+                disabled={!subject}
                 onChange={(e) => setChapterNo(e.target.value)}
                 min="1"
               />
 
               <Input
                 type="number"
-                name="reading_time"
+                name="readingTime"
                 placeholder="Reading Time (minutes)"
                 value={readingTime}
                 onChange={(e) => setReadingTime(e.target.value)}
@@ -528,13 +503,12 @@ export default function AddPostPage() {
 
         <SectionsEditor sections={sections} onSectionsChange={setSections} />
 
-        {/* Hidden Inputs */}
-        <input type="hidden" name="thumbnail" value={thumbnail} />
-        <input type="hidden" name="class" value={classValue} />
-        <input type="hidden" name="subject" value={subject} />
-        <input type="hidden" name="chapter_no" value={chapterNo} />
-        <input type="hidden" name="reading_time" value={readingTime} />
         <input type="hidden" name="content" value={buildMDX()} />
+        <input type="hidden" name="thumbnail" value={thumbnail} />
+        <input type="hidden" name="classLevel" value={classLevel} />
+        <input type="hidden" name="subject" value={subject} />
+        <input type="hidden" name="chapterNo" value={chapterNo} />
+        <input type="hidden" name="readingTime" value={readingTime} />
       </form>
     </>
   );

@@ -13,7 +13,6 @@ import {
 import { Filter, RotateCcw } from "lucide-react";
 import { MotionButton } from "@/components/custom/Motion";
 import { getPostsByFilter } from "@/utils/post/get/action";
-import { Database } from "@/utils/supabase/types";
 import { useRef, useState, use } from "react";
 import {
   Select,
@@ -22,47 +21,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CLASSES, SUBJECTS, STATUSES } from "@/utils/CONSTANT";
+import { STATUSES } from "@/utils/CONSTANT";
 
 interface FilterSheetProps {
-  pagePromise: Promise<string | string[] | undefined>;
   statusPromise: Promise<string | string[] | undefined>;
-  classPromise: Promise<string | string[] | undefined>;
-  subjectPromise: Promise<string | string[] | undefined>;
   sortbyPromise: Promise<string | string[] | undefined>;
 }
 
 export default function FilterSheet({
-  pagePromise,
   statusPromise,
-  classPromise,
-  subjectPromise,
   sortbyPromise,
 }: FilterSheetProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(
     (use(statusPromise) as string) || ""
   );
-  const [selectedClass, setSelectedClass] = useState<string | undefined>(
-    (use(classPromise) as string) || ""
-  );
-  const [selectedSubject, setSelectedSubject] = useState<string | undefined>(
-    (use(subjectPromise) as string) || ""
-  );
+
   const [selectedSortOrder, setSelectedSortOrder] = useState<string | undefined>(
     (use(sortbyPromise) as string) || ""
-  );
-  const [currentPage, setCurrentPage] = useState<string | undefined>(
-    (use(pagePromise) as string) || ""
   );
 
   const formRef = useRef<HTMLFormElement>(null);
 
   const resetFilters = () => {
     setSelectedStatus("");
-    setSelectedClass("");
-    setSelectedSubject("");
     setSelectedSortOrder("");
-    setCurrentPage("");
     formRef.current?.reset();
   };
 
@@ -95,57 +77,6 @@ export default function FilterSheet({
           className="flex-1 overflow-y-auto"
         >
           <div className="p-6 space-y-6">
-            {/* Class */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-foreground/80">
-                Class
-              </h3>
-              <Select
-                value={selectedClass}
-                onValueChange={(value) =>
-                  setSelectedClass(value as Database["public"]["Enums"]["Class"])
-                }
-              >
-                <SelectTrigger className="w-full hover:cursor-pointer">
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLASSES.map(({ id, name }) => (
-                    <SelectItem key={id} value={id}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Subject */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-foreground/80">
-                Subject
-              </h3>
-              <Select
-                value={selectedSubject}
-                onValueChange={(value) =>
-                  setSelectedSubject(
-                    value as Database["public"]["Enums"]["Subject"]
-                  )
-                }
-              >
-                <SelectTrigger className="w-full hover:cursor-pointer">
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(SUBJECTS).map(([key, value]) => (
-                    <SelectItem key={value} value={value}>
-                      {key}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Status */}
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-foreground/80">
                 Status
@@ -153,9 +84,7 @@ export default function FilterSheet({
               <Select
                 value={selectedStatus}
                 onValueChange={(value) =>
-                  setSelectedStatus(
-                    value as Database["public"]["Enums"]["Status"]
-                  )
+                  setSelectedStatus(value)
                 }
               >
                 <SelectTrigger className="w-full hover:cursor-pointer">
@@ -178,9 +107,7 @@ export default function FilterSheet({
               </h3>
               <Select
                 value={selectedSortOrder}
-                onValueChange={(value) =>
-                  setSelectedSortOrder(value as "latest" | "oldest")
-                }
+                onValueChange={(value) => setSelectedSortOrder(value as "latest" | "oldest")}
               >
                 <SelectTrigger className="w-full hover:cursor-pointer">
                   <SelectValue placeholder="Sort by" />
@@ -194,9 +121,6 @@ export default function FilterSheet({
           </div>
 
           {/* Hidden Inputs */}
-          <input type="hidden" name="page" value={currentPage || ""} />
-          <input type="hidden" name="class" value={selectedClass || ""} />
-          <input type="hidden" name="subject" value={selectedSubject || ""} />
           <input type="hidden" name="status" value={selectedStatus || ""} />
           <input type="hidden" name="sortby" value={selectedSortOrder || ""} />
 

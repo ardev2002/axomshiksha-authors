@@ -16,6 +16,7 @@ import {
   Home,
   BarChart3,
   Layout,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { getAuthorPostStats } from "@/utils/helpers/getAuthorPostStats";
@@ -23,9 +24,12 @@ import { formatNumber } from "@/utils/formatNumber";
 import {
   getRecentPublishedPosts,
   getRecentDraftPosts,
+  getRecentScheduledPosts,
 } from "@/utils/helpers/getRecentPosts";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RecentPostsCard } from "./components/RecentPostsCard";
+import { RecentPostsCardSkeleton } from "./components/RecentPostsCardSkeleton";
 
 export default async function AuthorDashboardPage() {
   return (
@@ -38,7 +42,7 @@ export default async function AuthorDashboardPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="grid sm:grid-cols-2 gap-5 overflow-hidden"
+        className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-hidden"
       >
         <Suspense fallback={<RecentlyPublishedPostsSkeleton />}>
           <RecentlyPublishedPosts />
@@ -46,6 +50,10 @@ export default async function AuthorDashboardPage() {
 
         <Suspense fallback={<DraftedPostsSkeleton />}>
           <DraftedPosts />
+        </Suspense>
+        
+        <Suspense fallback={<RecentlyScheduledPostsSkeleton />}>
+          <RecentlyScheduledPosts />
         </Suspense>
       </motion.div>
     </>
@@ -108,6 +116,11 @@ async function Stats() {
       icon: <PenLine className="w-5 h-5 text-amber-400" />,
     },
     {
+      label: "Scheduled",
+      value: statsData ? formatNumber(statsData.totalScheduledPosts) : "0",
+      icon: <Clock className="w-5 h-5 text-purple-400" />,
+    },
+    {
       label: "Total Views",
       value: statsData ? formatNumber(statsData.totalViews) : "0",
       icon: <Eye className="w-5 h-5 text-indigo-400" />,
@@ -118,7 +131,7 @@ async function Stats() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 }}
-      className="grid gap-5 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]"
+      className="grid gap-5 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]"
     >
       {stats.map((item, i) => (
         <motion.div
@@ -150,64 +163,15 @@ async function RecentlyPublishedPosts() {
   const statsData = await getAuthorPostStats();
   const recentPublished = await getRecentPublishedPosts(3);
   return (
-    <Card className="bg-background/70 border border-accent shadow-sm hover:shadow-md transition w-full overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-emerald-400" />
-          <CardTitle className="text-base font-semibold text-foreground">
-            Recently Published
-          </CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="text-emerald-400 border-emerald-400/30 bg-emerald-400/10"
-          >
-            {statsData ? formatNumber(statsData.totalPublishedPosts) : "0"}{" "}
-            posts
-          </Badge>
-          <Link href="/dashboard/posts?status=published">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-emerald-400 hover:cursor-pointer hover:bg-emerald-400/10"
-            >
-              View All
-            </Button>
-          </Link>
-        </div>
-      </CardHeader>
-      <CardContent className="p-5 space-y-2 max-w-full">
-        {recentPublished.length > 0 ? (
-          recentPublished.map((post) => (
-            <div
-              key={post.id}
-              className="flex items-center justify-between group hover:bg-white/5 p-2 rounded-md transition w-full min-w-0"
-            >
-              <p className="text-sm text-foreground truncate flex-1 min-w-0">
-                {post.title}
-              </p>
-              <div className="flex items-center gap-1 ml-2 shrink-0">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {post.date}
-                </span>
-                <Link
-                  href={`https://axomshiksha.com/${post.url}`}
-                  target="_blank"
-                  className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground transition"
-                >
-                  <ExternalLink size={14} />
-                </Link>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No published posts yet
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <RecentPostsCard
+      title="Recently Published"
+      icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
+      badgeVariant="published"
+      totalCount={statsData?.totalPublishedPosts}
+      posts={recentPublished}
+      viewAllHref="/dashboard/posts?status=published"
+      isPublished={true}
+    />
   );
 }
 
@@ -215,66 +179,35 @@ async function DraftedPosts() {
   const statsData = await getAuthorPostStats();
   const draftedPosts = await getRecentDraftPosts(3);
   return (
-    <Card className="bg-background/70 border border-accent shadow-sm hover:shadow-md transition w-full overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <FileClock className="w-4 h-4 text-amber-400" />
-          <CardTitle className="text-base font-semibold text-foreground">
-            Drafted Posts
-          </CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="text-amber-400 border-amber-400/30 bg-amber-400/10"
-          >
-            {statsData ? formatNumber(statsData.totalDraftPosts) : "0"} drafts
-          </Badge>
-          <Link href="/dashboard/posts?status=draft">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-amber-400 hover:cursor-pointer hover:bg-amber-400/10"
-            >
-              View All
-            </Button>
-          </Link>
-        </div>
-      </CardHeader>
-      <CardContent className="p-5 space-y-2 max-w-full">
-        {draftedPosts.length > 0 ? (
-          draftedPosts.map((post) => (
-            <div
-              key={post.id}
-              className="flex items-center justify-between group hover:bg-white/5 p-2 rounded-md transition w-full min-w-0"
-            >
-              <p className="text-sm text-foreground truncate flex-1 min-w-0">
-                {post.title}
-              </p>
-              <div className="flex items-center gap-1 ml-2 shrink-0">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {post.date}
-                </span>
-                <Link
-                  href={`/dashboard/posts/edit?slug=${post.url}`}
-                  className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground transition"
-                >
-                  <Edit3 size={14} />
-                </Link>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground">No draft posts yet</p>
-        )}
-      </CardContent>
-    </Card>
+    <RecentPostsCard
+      title="Drafted Posts"
+      icon={<FileClock className="w-4 h-4 text-amber-400" />}
+      badgeVariant="draft"
+      totalCount={statsData?.totalDraftPosts}
+      posts={draftedPosts}
+      viewAllHref="/dashboard/posts?status=draft"
+    />
+  );
+}
+
+async function RecentlyScheduledPosts() {
+  const statsData = await getAuthorPostStats();
+  const scheduledPosts = await getRecentScheduledPosts(3);
+  return (
+    <RecentPostsCard
+      title="Scheduled Posts"
+      icon={<Clock className="w-4 h-4 text-purple-400" />}
+      badgeVariant="scheduled"
+      totalCount={statsData?.totalScheduledPosts}
+      posts={scheduledPosts}
+      viewAllHref="/dashboard/posts?status=scheduled"
+    />
   );
 }
 
 function StatsSkeleton() {
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-5 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
       {[...Array(5)].map((_, i) => (
         <Card
           key={i}
@@ -294,55 +227,13 @@ function StatsSkeleton() {
 }
 
 function RecentlyPublishedPostsSkeleton() {
-  return (
-    <Card className="bg-background/70 border border-white/10 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <Skeleton className="w-4 h-4 rounded-full" />
-          <CardTitle className="text-base font-semibold">
-            <Skeleton className="h-5 w-32" />
-          </CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-8 w-16" />
-        </div>
-      </CardHeader>
-      <CardContent className="p-5 space-y-3">
-        {[...Array(2)].map((_, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
+  return <RecentPostsCardSkeleton title="Recently Published" />;
 }
 
 function DraftedPostsSkeleton() {
-  return (
-    <Card className="bg-background/70 border border-white/10 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <Skeleton className="w-4 h-4 rounded-full" />
-          <CardTitle className="text-base font-semibold">
-            <Skeleton className="h-5 w-32" />
-          </CardTitle>
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-8 w-16" />
-        </div>
-      </CardHeader>
-      <CardContent className="p-5 space-y-3">
-        {[...Array(2)].map((_, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
+  return <RecentPostsCardSkeleton title="Drafted Posts" />;
+}
+
+function RecentlyScheduledPostsSkeleton() {
+  return <RecentPostsCardSkeleton title="Scheduled Posts" />;
 }

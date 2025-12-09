@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 export async function signIn() {
   const sp = await createClient();
-  const { data, error } = await sp.auth.signInWithOAuth({
+  const { data } = await sp.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: `${process.env.NEXT_PUBLIC_APP_BASE_URL!}/auth/v1/callback`,

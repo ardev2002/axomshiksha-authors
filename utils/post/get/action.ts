@@ -1,175 +1,180 @@
 "use server";
-import * as z from "zod";
-import { createClient } from "@/utils/supabase/server";
-import { PostgrestError } from "@supabase/supabase-js";
-import { Database, Tables } from "@/utils/supabase/types";
 import { redirect, RedirectType } from "next/navigation";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { db } from "@/lib/dynamoClient";
+import { QueryCommand, QueryCommandInput, ScanCommand, ScanCommandInput } from "@aws-sdk/lib-dynamodb";
 import { s3Client } from "@/lib/s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import matter from "gray-matter";
+import { getFreshUser } from "@/utils/helpers/getFreshUser";
+import { DBPost } from "@/utils/types";
+import { extractPostUrlParams } from "@/utils/helpers/slugify";
 
-export interface GetPostReturnType {
-  post: Tables<"posts"> | null;
-  content?: string;
-  errMsg?: string;
-}
+export async function getPost(postSlug: string) {
+  const params: QueryCommandInput = {
+    TableName: process.env.AWS_POST_TABLE!,
+    KeyConditionExpression: "#slug = :slug",
+    ExpressionAttributeNames: {
+      "#slug": "slug",
+    },
+    ExpressionAttributeValues: {
+      ":slug": postSlug,
+    },
+  };
 
-interface GetSinglePostParams {
-  filters?: Partial<Omit<Tables<"posts">, "id" | "created_at" | "thumbnail">>;
-}
-
-export async function getSinglePost({ filters }: GetSinglePostParams = {}): Promise<GetPostReturnType> {
   try {
-    const supabase = await createClient();
-    let query: any = supabase
-      .from("posts")
-      .select("*")
-      .single();
+    const { Items } = await db.send(new QueryCommand(params));
+    
+    if (!Items) throw new Error("Post not found");
 
-    // Apply filters if provided
-    if (filters) {
-      for (const [column, value] of Object.entries(filters)) {
-        if (
-          value !== undefined &&
-          value !== "" &&
-          value !== null &&
-          column !== "created_at" &&
-          column !== "id" &&
-          column !== "thumbnail"
-        ) {
-          query = query.eq(column, value);
-        }
-      }
+    const { Body } = await s3Client.send(new GetObjectCommand({
+      Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME!,
+      Key: Items[0]?.contentKey
+    }))
+
+    if (!Body) throw new Error("Post content not found");
+    const rawContent = await Body.transformToString();
+
+    const { data, content } = matter(rawContent);
+
+    const postWithMetadata = {
+      slug: Items?.[0]?.slug,
+      topic: extractPostUrlParams(Items?.[0]?.slug)?.topic,
+      title: Items?.[0]?.title,
+      chapterNo: data.chapterNo,
+      readingTime: data.readingTime,
+      classLevel: data.classLevel,
+      subject: data.subject,
+      description: data.description,
+      thumbnail: data.thumbnail,
+      createdAt: data.createdAt
     }
 
-    const { data: post, error } = await query;
+    return { post: postWithMetadata || null, content };
+  } catch (error) {
+    return { post: null }
+  }
+}
 
-    if (error) throw error;
-    
-    // Retrieve content from S3 if content_key exists
-    let content = "";
-    if (post?.content_key) {
+
+export interface PaginatedPostsResponse {
+  posts: Record<string, any>[];
+  nextKey: Record<string, any> | null;
+}
+
+export interface GetPaginatedPostsParams {
+  lastKey?: Record<string, any>;
+  sortDirection?: "latest" | "oldest";
+  limit?: number,
+  status?: DBPost['status'];
+}
+
+export async function getPaginatedPosts(
+  filters?: GetPaginatedPostsParams
+): Promise<PaginatedPostsResponse> {
+
+  const authorId = (await getFreshUser())?.email?.split("@")[0];
+
+  const params: QueryCommandInput = {
+    TableName: process.env.AWS_POST_TABLE!,
+    IndexName: 'GSI_PublishedByDate',
+    KeyConditionExpression: "#status = :status",
+    FilterExpression: "#authorId = :authorId",
+    ExpressionAttributeNames: {
+      "#status": "status",
+      "#authorId": "authorId",
+    },
+    ExpressionAttributeValues: {
+      ":status": filters?.status || "published",
+      ":authorId": authorId,
+    },
+    ScanIndexForward: filters?.sortDirection !== "latest",
+    Limit: filters?.limit || 10,
+  };
+
+  if (filters?.lastKey) {
+    params.ExclusiveStartKey = filters?.lastKey;
+  }
+
+  const {Items, LastEvaluatedKey} = await db.send(new QueryCommand(params));
+  
+  // Process items to add metadata from S3
+  if (Items && Items.length > 0) {
+    const processedItems = await Promise.all(Items.map(async (item) => {
       try {
-        const command = new GetObjectCommand({
-          Bucket: "axomshiksha",
-          Key: post.content_key,
-        });
+        const {Body} = await s3Client.send(new GetObjectCommand({
+          Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME!, 
+          Key: item?.contentKey
+        }));
         
-        const response = await s3Client.send(command);
-        content = await response.Body?.transformToString() || "";
+        if (Body) {
+          const rawContent = await Body.transformToString();
+          const { data } = matter(rawContent);
+          return {
+            ...item,
+            ...data,
+          };
+        }
+        return item;
       } catch (error) {
-        console.error("Error retrieving content from S3:", error);
-        // Don't throw error here, just return empty content
+        return item;
       }
-    }
+    }));
     
-    return { post, content };
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return { errMsg: err.issues[0].message, post: null };
-    } else if (err instanceof PostgrestError) {
-      return { errMsg: err.message, post: null };
-    }
-    return { errMsg: "Unexpected error! Try again", post: null };
-  }
-}
-
-interface GetPaginatedPostsParams {
-  page?: number;
-  limit?: number;
-  sortOrder?: "ascending" | "descending";
-  search?: string;
-  filters?: Partial<Omit<Tables<"posts">, "id" | "created_at" | "thumbnail">>;
-}
-
-export interface GetPaginatedPostsResult {
-  posts: Tables<"posts">[] | [];
-  totalPages: number;
-  currentPage: number;
-}
-
-export async function getPaginatedPosts({
-  page = 1,
-  limit = 5,
-  sortOrder = "descending",
-  search = "",
-  filters,
-}: GetPaginatedPostsParams): Promise<GetPaginatedPostsResult> {
-  const supabase = await createClient();
-
-  const start = (page - 1) * limit;
-  const end = start + limit - 1;
-
-  let query = supabase
-    .from("posts")
-    .select("*", { count: "exact" });
-
-  if (filters?.status) query = query.eq("status", filters.status);
-
-  if (filters) {
-    for (const [column, value] of Object.entries(filters)) {
-      if (
-        value !== undefined &&
-        value !== "" &&
-        value !== null &&
-        column !== "created_at" &&
-        column !== "id" &&
-        column !== "thumbnail"
-      ) {
-        query = query.eq(column, value);
-      }
-    }
-  }
-
-  if (search.trim() !== "") {
-    query = query.textSearch("title", search.trim(), {
-      type: "websearch",
-      config: "english",
-    });
-  }
-
-  query = query
-    .order("created_at", { ascending: sortOrder === "ascending" })
-    .range(start, end);
-
-  const { data, error, count } = await query;
-  if (error) {
     return {
-      posts: [],
-      totalPages: 1,
-      currentPage: page,
+      posts: processedItems,
+      nextKey: LastEvaluatedKey || null,
     };
   }
 
-  const totalPages = Math.ceil((count ?? 0) / limit) || 1;
-
   return {
-    posts: data || [],
-    totalPages,
-    currentPage: page,
+    posts: Items || [],
+    nextKey: LastEvaluatedKey || null,
   };
 }
 
+
 export async function getPostsByFilter(formData: FormData) {
   const formDataObject = Object.fromEntries(formData);
-  const page = Number(formDataObject.page);
-  const classValue = formDataObject.class as
-    | Database["public"]["Enums"]["Class"]
-    | "";
-  const subject = formDataObject.subject as
-    | Database["public"]["Enums"]["Subject"]
-    | "";
   const status = formDataObject.status as
-    | Database["public"]["Enums"]["Status"]
+    | string
     | "";
   const sortby = formDataObject.sortby as "latest" | "oldest" | "";
 
   const params = [];
-  if (page) params.push(`page=${page}`);
-  if (classValue) params.push(`class=${classValue}`);
-  if (subject) params.push(`subject=${subject}`);
   if (status) params.push(`status=${status}`);
   if (sortby) params.push(`sortby=${sortby}`);
 
   const queryString = params.length > 0 ? `?${params.join("&")}` : "";
   redirect(`/dashboard/posts${queryString}`, RedirectType.push);
+}
+
+export async function searchPosts(
+  searchTerm: string,
+  lastEvaluatedKey?: Record<string, any>,
+  limit: number = 10,
+): Promise<PaginatedPostsResponse> {
+  const params: ScanCommandInput = {
+    TableName: process.env.AWS_POST_TABLE!,
+    FilterExpression: "contains(#title, :searchTerm) AND #status = :published",
+    ExpressionAttributeNames: {
+      "#title": "title",
+      "#status": "status",
+    },
+    ExpressionAttributeValues: {
+      ":searchTerm": searchTerm,
+      ":published": "published",
+    },
+    Limit: limit,
+  };
+
+  if (lastEvaluatedKey) {
+    params.ExclusiveStartKey = lastEvaluatedKey;
+  }
+
+  const result = await db.send(new ScanCommand(params));
+
+  return {
+    posts: result.Items || [],
+    nextKey: result.LastEvaluatedKey || null,
+  };
 }

@@ -1,62 +1,77 @@
+"use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, ChevronLeft, ChevronRight, Edit } from "lucide-react";
-import { getPaginatedPosts } from "@/utils/post/get/action";
+import { getPaginatedPosts, PaginatedPostsResponse } from "@/utils/post/get/action";
 import Link from "next/link";
-import { Database, Tables } from "@/utils/supabase/types";
 import ValidationErrorCard from "@/components/custom/ValidationErrorCard";
 import PostMetaDate from "@/components/custom/PostMetaDate";
-import { getSession } from "@/utils/helpers/getSession";
-import { generatePostUrl } from "@/utils/helpers/generatePostUrl";
 import DeletePost from "./DeletePost";
+import { DBPost } from "@/utils/types";
+import { use, useState, useEffect } from "react";
 
 interface AuthorPostsPageProps {
-  pagePromise: Promise<string | string[] | undefined>;
   statusPromise: Promise<string | string[] | undefined>;
-  classPromise: Promise<string | string[] | undefined>;
-  subjectPromise: Promise<string | string[] | undefined>;
   sortbyPromise: Promise<string | string[] | undefined>;
+  initialPostsPromise: Promise<PaginatedPostsResponse>;
 }
 
-export default async function AuthorPostsPage({
-  pagePromise,
+export default function AuthorPostsPage({
   statusPromise,
-  classPromise,
-  subjectPromise,
   sortbyPromise,
+  initialPostsPromise,
 }: AuthorPostsPageProps) {
-  // Use the params directly instead of resolving promises
-  const isPageValid =
-    /^(?:|undefined|[1-9]\d*)$/.test((await pagePromise) as string) === true;
+  const { posts: initialPosts, nextKey } = use(initialPostsPromise);
+  const [sortby, setSortby] = useState<"latest" | "oldest" | undefined>(use(sortbyPromise) as "latest" | "oldest" | undefined);
+  const [status, setStatus] = useState<DBPost['status'] | undefined>(use(statusPromise) as DBPost['status'] | undefined);
+  const [posts, setPosts] = useState<Record<string, any>[]>(initialPosts);
+  const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | null>(nextKey);
+  const [prevPaginateKeys, setPrevPaginateKeys] = useState<(Record<string, any> | null)[]>([]);
+  
+  useEffect(() => {
+      setPosts(initialPosts);
+      setNextPaginateKey(nextKey);
+      setPrevPaginateKeys([]);
+  }, [initialPosts, nextKey]);
 
-  const page = await pagePromise.then(Number);
-  const validPage = !isNaN(page) && page > 0 ? Math.floor(page) : 1;
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const { posts: newPosts } = await getPaginatedPosts({ 
+        lastKey: nextPaginateKey || undefined, 
+        sortDirection: sortby, 
+        status
+      });
+      setPosts(newPosts);
+    };
+    fetchPosts();
+  }, [status, sortby])
+  const prevPostsHandler = async () => {
+    const prevKey = prevPaginateKeys[prevPaginateKeys.length - 1];
+    const newPrevKeys = prevPaginateKeys.slice(0, -1);
+    
+    const { posts: newPosts } = await getPaginatedPosts({ 
+      lastKey: prevKey || undefined, 
+      sortDirection: sortby,
+      status
+    });
+    
+    setPosts(newPosts);
+    setNextPaginateKey(prevKey);
+    setPrevPaginateKeys(newPrevKeys);
+  };
 
-  const status = (await statusPromise) as
-    | Database["public"]["Enums"]["Status"]
-    | undefined;
-  const classParam = (await classPromise) as
-    | Database["public"]["Enums"]["Class"]
-    | undefined;
-  const subjectParam = (await subjectPromise) as
-    | Database["public"]["Enums"]["Subject"]
-    | undefined;
-  const sortby = (await sortbyPromise) as "latest" | "oldest" | undefined;
-
-  const session = await getSession();
-  if (!session?.user) return null;
-  const authorId = session.user.email?.split("@")[0] as string;
-
-  const { posts, totalPages } = await getPaginatedPosts({
-    filters: {
-      authorId: authorId,
-      class: classParam,
-      subject: subjectParam,
-      status,
-    },
-    page: validPage,
-    sortOrder: sortby == "latest" ? "descending" : "ascending",
-  });
+  const nextPostsHandler = async () => {
+    const { posts: newPosts, nextKey: newNextKey } = await getPaginatedPosts({ 
+      lastKey: nextPaginateKey || undefined, 
+      sortDirection: sortby, 
+      limit: 10,
+      status
+    });
+    
+    setPosts(newPosts);
+    setNextPaginateKey(newNextKey);
+    setPrevPaginateKeys([...prevPaginateKeys, nextPaginateKey]);
+  };
 
   if (!posts.length)
     return (
@@ -67,67 +82,32 @@ export default async function AuthorPostsPage({
 
   return (
     <div className="space-y-6">
-      {!isPageValid && (
-        <ValidationErrorCard
-          errors={[
-            "Page number must be a positive integer.",
-            "Result is shown for page no 1",
-          ]}
-        />
-      )}
-
       <div className="grid gap-4">
-        {posts.map((post: Tables<"posts">) => (
-          <PostCard key={post.id} post={post} page={validPage} />
+        {posts.map((post: Record<string, any>) => (
+          <PostCard key={post.slug} post={post} />
         ))}
       </div>
-      {posts.length > 0 && (
+      
+      {(nextPaginateKey) && (
         <div className="flex justify-center items-center gap-4 pt-6 border-t border-accent">
           <Button
             variant="ghost"
             size="sm"
-            disabled={!validPage || validPage <= 1}
+            disabled={!prevPaginateKeys.length}
+            onClick={prevPostsHandler}
             className="text-violet-500 hover:bg-violet-500/10 flex items-center gap-1"
-            asChild
           >
-            <Link
-              className="flex items-center gap-1"
-              href={`/dashboard/posts${
-                validPage > 1 ? `?page=${validPage - 1}` : ""
-              }${classParam ? `&class=${classParam}` : ""}${
-                subjectParam ? `&subject=${subjectParam}` : ""
-              }${status ? `&status=${status}` : ""}${
-                sortby ? `&sortby=${sortby}` : ""
-              }`}
-            >
-              <ChevronLeft size={16} /> Prev
-            </Link>
+            <ChevronLeft size={16} /> Prev
           </Button>
-
-          <span className="text-sm text-muted-foreground">
-            Page <strong className="text-foreground">{validPage}</strong> of{" "}
-            {totalPages}
-          </span>
 
           <Button
             variant="ghost"
             size="sm"
-            disabled={validPage >= totalPages!}
+            disabled={!nextPaginateKey}
+            onClick={nextPostsHandler}
             className="text-violet-500 hover:bg-violet-500/10 flex items-center gap-1"
-            asChild
           >
-            <Link
-              className="flex items-center gap-1"
-              href={`/dashboard/posts${
-                validPage ? `?page=${validPage + 1}` : ""
-              }${classParam ? `&class=${classParam}` : ""}${
-                subjectParam ? `&subject=${subjectParam}` : ""
-              }${status ? `&status=${status}` : ""}${
-                sortby ? `&sortby=${sortby}` : ""
-              }`}
-            >
-              Next <ChevronRight size={16} />
-            </Link>
+            Next <ChevronRight size={16} />
           </Button>
         </div>
       )}
@@ -135,20 +115,12 @@ export default async function AuthorPostsPage({
   );
 }
 
-/* ------------------- PostCard Component ------------------- */
-async function PostCard({
+
+function PostCard({
   post,
-  page,
 }: {
-  post: Tables<"posts">;
-  page: number;
+  post: Record<string, any>;
 }) {
-  const { generatedUrl } = generatePostUrl(
-    post.subject,
-    post.class,
-    post.chapter_no,
-    post.topic
-  );
 
   const getStatusBadgeClass = (status: string | null) => {
     switch (status) {
@@ -166,8 +138,7 @@ async function PostCard({
   return (
     <Card className="border border-accent bg-background/70 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden hover:bg-background/80">
       <CardContent className="p-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5">
-          {/* Left Side */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <span
@@ -177,34 +148,33 @@ async function PostCard({
               >
                 {post.status?.charAt(0).toUpperCase() + post.status!.slice(1)}
               </span>
-              <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
-                Class {post.class}
-              </span>
-              <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
+              {post.classLevel && <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
+                {post.classLevel}
+              </span>}
+              {post.subject && <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
                 {post.subject}
-              </span>
+              </span>}
             </div>
 
-            <h3 className="font-semibold text-lg text-foreground">
+            <h3 className="font-semibold text-lg text-foreground truncate">
               {post.title}
             </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-2 mb-3">
-              {post.desc}
+            <p className="text-sm text-muted-foreground line-clamp-2 mt-2 mb-3 truncate">
+              {post.description}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
-                <Eye size={14} /> {post.views}
+                <Eye size={14} />
               </span>
-              <PostMetaDate date={post.created_at} />
+              <PostMetaDate date={post.createdAt} />
             </div>
           </div>
 
           {/* Right Side Buttons */}
           <div className="flex items-center gap-2">
-            {/* View Button */}
             <Link
-              href={`https://axomshiksha.com/${generatedUrl}`}
+              href={`https://axomshiksha.com/${post.slug}`}
               target="_blank"
               className="text-emerald-400 hover:bg-emerald-400/10 rounded-md p-2 transition-colors duration-200"
               title="View Post"
@@ -214,11 +184,7 @@ async function PostCard({
 
             {/* Edit Button */}
             <Link
-              href={`/dashboard/posts/edit?${
-                post.subject ? `subject=${post.subject}` : ""
-              }${post.class ? `&class=${post.class}` : ""}${
-                post.chapter_no ? `&chapter_no=${post.chapter_no}` : ""
-              }${post.topic ? `&topic=${post.topic}` : ""}`}
+              href={`/dashboard/posts/edit?slug=${post.slug}`}
               className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
               title="Edit Post"
             >
@@ -227,12 +193,7 @@ async function PostCard({
 
             {/* Delete Button */}
             <DeletePost
-              postTitle={post.title}
-              subject={post.subject}
-              classValue={post.class}
-              chapter_no={post.chapter_no}
-              topic={post.topic}
-              page={page}
+              post={post}
             />
           </div>
         </div>

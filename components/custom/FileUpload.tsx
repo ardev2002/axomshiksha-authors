@@ -11,7 +11,7 @@ import {
 } from "@/utils/s3/action";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
-
+import { AspectRatio } from "../ui/aspect-ratio";
 export default function FileUpload({
   label,
   onUploaded,
@@ -29,7 +29,6 @@ export default function FileUpload({
   const [Key, setKey] = useState("");
   const [isLoading, setLoading] = useState<boolean>(false);
 
-  // When component unmounts, we should notify parent to handle cleanup if needed
   useEffect(() => {
     if (currentImage) {
       const Key = currentImage.split(
@@ -43,8 +42,6 @@ export default function FileUpload({
       fetchPreview();
     }
     return () => {
-      // If there's a preview but no currentImage (meaning it was uploaded in this session)
-      // and it hasn't been removed, we should notify the parent
       if (preview && !currentImage && Key) {
         onRemoved && onRemoved(Key);
       }
@@ -93,61 +90,63 @@ export default function FileUpload({
 
   return (
     <div className="space-y-2">
-      {preview ? (
-        <div className="relative w-full h-40 rounded-lg overflow-hidden border bg-muted">
-          <Image src={preview} alt="preview" fill className="object-cover" />
+        {preview ? (
+          <div className="relative w-full rounded-lg overflow-hidden border bg-muted">
+            <AspectRatio ratio={11 / 3}>
+              <Image src={preview} alt="preview" fill className="object-cover" />
+            </AspectRatio>
 
-          {/* Remove Button */}
-          <Button
-            variant={"ghost"}
-            type="button"
-            onClick={removeImage}
-            className="absolute hover:cursor-pointer top-2 right-2 rounded-full p-1 transition"
-          >
-            <X size={16} />
-          </Button>
+            {/* Remove Button */}
+            <Button
+              variant={"ghost"}
+              type="button"
+              onClick={removeImage}
+              className="absolute hover:cursor-pointer top-2 right-2 rounded-full p-1 transition"
+            >
+              <X size={16} />
+            </Button>
 
-          {/* Loading Overlay */}
-          {isLoading && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/60 border-t-white" />
-            </div>
-          )}
-        </div>
-      ) : (
-        <div
-          onClick={() => document.getElementById(`file-${label}`)?.click()}
-          className="w-full h-36 flex flex-col gap-2 items-center justify-center border border-dashed border-violet-400 rounded-lg bg-muted/40 hover:bg-muted cursor-pointer transition text-center"
-        >
-          {isLoading ? (
-            <>
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
-              <p className="text-xs text-muted-foreground">Uploading...</p>
-            </>
-          ) : (
-            <>
-              <div className="rounded-full bg-primary/10 p-2">
-                <Upload />
+            {/* Loading Overlay */}
+            {isLoading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/60 border-t-white" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Click to select image
-                <br />
-                <span className="text-[10px]">(or drag & drop)</span>
-              </p>
-            </>
-          )}
+            )}
+          </div>
+        ) : (
+          <div
+            onClick={() => document.getElementById(`file-${label}`)?.click()}
+            className="w-full h-36 flex flex-col gap-2 items-center justify-center border border-dashed border-violet-400 rounded-lg bg-muted/40 hover:bg-muted cursor-pointer transition text-center"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+                <p className="text-xs text-muted-foreground">Uploading...</p>
+              </>
+            ) : (
+              <>
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Upload />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Click to select image
+                  <br />
+                  <span className="text-[10px]">(or drag & drop)</span>
+                </p>
+              </>
+            )}
 
-          {/* Hidden file input */}
-          <input
-            id={`file-${label}`}
-            type="file"
-            accept="image/*"
-            onChange={handleFile}
-            className="hidden"
-            disabled={isLoading}
-          />
-        </div>
-      )}
+            {/* Hidden file input */}
+            <input
+              id={`file-${label}`}
+              type="file"
+              accept="image/*"
+              onChange={handleFile}
+              className="hidden"
+              disabled={isLoading}
+            />
+          </div>
+        )}
     </div>
   );
 }

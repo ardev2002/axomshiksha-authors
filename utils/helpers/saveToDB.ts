@@ -1,15 +1,13 @@
 import "server-only";
-import { Tables } from "@/utils/supabase/types";
 import { fullPostSchema } from "@/utils/zod/schema";
 import { checkUrlAvailability } from "./checkUrl";
-import { createClient } from "@/utils/supabase/server";
 import { ZodError } from "zod";
-import { PostgrestError } from "@supabase/supabase-js";
 import { getFreshUser } from "./getFreshUser";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/s3";
-import { URLOptions } from "../types";
 import { urlToContentKey } from "./generatePostUrl";
+import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { db } from "@/lib/dynamoClient";
 
 export interface SavedPostResult {
   successMsg?: string;
@@ -17,56 +15,36 @@ export interface SavedPostResult {
   statusText: "ok" | "fail" | "not_submitted";
   fieldErrors?: Record<string, string>;
   values?: Record<string, string | number>;
-  draftPost?: Partial<Tables<"posts">> | null;
+  draftPost?: object | null;
   requiresConfirmation?: boolean;
 }
 
 export async function saveToDB(
-  rawPost: Pick<
-    Tables<"posts">,
-    | "topic"
-    | "title"
-    | "desc"
-    | "class"
-    | "subject"
-    | "chapter_no"
-    | "reading_time"
-    | "status"
-    | "thumbnail"
-    | "scheduled_at"
-  > & { content?: string },
-  generatedUrl?: string,
-  urlOptions?: URLOptions,
+  rawPost: Record<string, any>,
+  slug: string,
   confirmed: boolean = false,
 ): Promise<SavedPostResult> {
   try {
     const {
-      topic,
       title,
-      thumbnail,
       status,
-      desc,
-      class: classValue,
-      subject,
-      chapter_no,
-      reading_time,
       content,
-      scheduled_at, // Added scheduled_at
     } = fullPostSchema.parse(rawPost);
 
     let isAvailable = true;
     let errMsg = "";
-    let draftPost: Partial<Tables<"posts">> | null = null;
+    let draftPost: Record<string, any> | undefined | null = null;
 
     if (status === "published" && !confirmed) {
-      if (!urlOptions) {
+      if (!slug) {
         return {
           statusText: "fail",
           errTopicMsg: "Invalid URL options. Please try again.",
         };
       }
 
-      const result = await checkUrlAvailability(urlOptions);
+      const result = await checkUrlAvailability(slug);
+
       isAvailable = result.isAvailable;
       errMsg = result.errMsg || "";
       draftPost = result.draftPost || null;
@@ -76,13 +54,9 @@ export async function saveToDB(
           statusText: "fail" as const,
           requiresConfirmation: true,
           draftPost: {
-            topic: draftPost.topic,
+            slug: draftPost.slug,
             title: draftPost.title,
-            class: draftPost.class,
-            subject: draftPost.subject,
-            authorId: draftPost.authorId,
             status: draftPost.status,
-            thumbnail: draftPost.thumbnail,
           },
         };
       }
@@ -92,65 +66,66 @@ export async function saveToDB(
       return { statusText: "fail" as const, errTopicMsg: errMsg };
     }
 
-    const supabase = await createClient();
-    const authorId =
-      (await getFreshUser())?.email?.split("@")[0] || "anonymous";
 
     let contentKey: string | null = null;
 
     if (content && (status === "published" || status === "draft" || status === "scheduled")) {
-      const base = generatedUrl && generatedUrl.trim().length > 0
-        ? generatedUrl
-        : topic;
-
-      const key = urlToContentKey(base);
-
       const command = new PutObjectCommand({
         Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
-        Key: key,
+        Key: urlToContentKey(slug),
         Body: content,
         ContentType: "text/markdown",
       });
 
       try {
         await s3Client.send(command);
-        contentKey = key;
+        contentKey = urlToContentKey(slug);
       } catch (error) {
         console.error("Error uploading content to S3:", error);
         throw new Error("Failed to upload content to S3");
       }
     }
 
-    const { data: post, error: postError } = await supabase
-      .from("posts")
-      .insert([
-        {
-          topic,
-          title,
-          thumbnail,
-          desc,
-          authorId,
-          class: classValue,
-          subject,
-          chapter_no,
-          reading_time,
-          status,
-          url: generatedUrl,
-          content_key: contentKey,
-          scheduled_at, // Added scheduled_at
-        },
-      ])
-      .select("id")
-      .single();
+    const authorId = (await getFreshUser())?.email?.split("@")[0];
 
-    if (postError) throw postError;
+    await db.send(new PutCommand({
+      TableName: process.env.AWS_POST_TABLE!,
+      Item: {
+        slug,
+        title,
+        contentKey,
+        status,
+        authorId
+      }
+    }))
+
+    if(status === "scheduled"){
+      const res = await fetch("https://zzfcus8v5k.execute-api.ap-south-1.amazonaws.com/prod/schedule-post", {
+        method: "POST",
+        headers: {
+          "x-api-key": process.env.API_KEY!,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          slug,
+          at: rawPost.scheduledAt.slice(0, 19),
+        }),
+      })
+
+      const data = await res.json();
+
+      console.log("Scheduled API Response: ", data);
+
+
+      if(data.ScheduleArn){
+        return { statusText: "ok" as const, successMsg: "Post scheduled successfully" };
+      }
+    }
 
     const successMsg =
       status === "published"
         ? "Post published successfully"
-        : status === "scheduled"
-        ? "Post scheduled successfully"
-        : "Draft saved successfully";
+          : "Draft saved successfully";
 
     await fetch("https://www.axomshiksha.com/api/revalidate", {
       method: "POST",
@@ -166,14 +141,6 @@ export async function saveToDB(
         const field = issue.path[0]?.toString() ?? "general";
         fieldErrors[field] = issue.message;
       });
-      return {
-        statusText: "fail" as const,
-        fieldErrors,
-      };
-    }
-    if (error instanceof PostgrestError) {
-      const fieldErrors: Record<string, string> = {};
-      fieldErrors["supabase"] = "DB error occurred";
       return {
         statusText: "fail" as const,
         fieldErrors,

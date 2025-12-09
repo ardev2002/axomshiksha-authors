@@ -2,7 +2,6 @@
 
 import { Spinner } from "@/components/ui/spinner";
 import { Trash2 } from "lucide-react";
-import { useFormStatus } from "react-dom";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,23 +16,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { useActionState, useState } from "react";
 import { deletePost, DeletePostState } from "@/utils/post/delete/action";
-import { Database } from "@/utils/supabase/types";
 
 interface DeletePostProps {
-  postTitle: string;
-  subject: Database["public"]["Enums"]["Subject"] | null;
-  classValue: Database["public"]["Enums"]["Class"] | null;
-  chapter_no: number | null;
-  topic: string;
-  page: number;
+  post: Record<string, any>;
 }
 export default function DeletePost({
-  postTitle,
-  subject,
-  classValue,
-  chapter_no,
-  topic,
-  page,
+  post,
 }: DeletePostProps) {
   const [open, setOpen] = useState(false);
   const [state, action, isPending] = useActionState<DeletePostState, FormData>(deletePost, { success: false });
@@ -47,25 +35,17 @@ export default function DeletePost({
           className={`rounded-md p-2 transition hover:cursor-pointer text-red-500 hover:text-red-500`}
           title="Delete Post"
         >
-          {!isPending ? <Trash2 size={16} /> : <Spinner />}
+          {!isPending ? <Trash2 size={16} /> : <span>Deleting <Spinner /></span>}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <form action={action}>
-          {subject && <input type="hidden" name="subject" value={subject} />}
-          {classValue && (
-            <input type="hidden" name="classNo" value={classValue} />
-          )}
-          {chapter_no && (
-            <input type="hidden" name="chapterNo" value={chapter_no} />
-          )}
-          <input type="hidden" name="topic" value={topic} />
-          <input type="hidden" name="page" value={page} />
+          <input type="hidden" name="slug" value={post.slug} />
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              post <span className="font-semibold truncate">"{postTitle}"</span>{" "}
+              post <span className="font-semibold truncate">"{post.title}"</span>{" "}
               and remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>

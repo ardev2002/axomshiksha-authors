@@ -1,79 +1,83 @@
 import "server-only";
-import { createClient } from "@/utils/supabase/server";
 import { formatTimeAgo } from "@/utils/helpers/formatTimeAgo";
-import { getSession } from "./getSession";
 import { cache } from "react";
-import { generatePostUrl } from "./generatePostUrl";
+import { getPaginatedPosts } from "@/utils/post/get/action";
 
 interface RecentPost {
   id: number;
   title: string;
   date: string;
-  url: string;
+  slug: string;
 }
 
 export const getRecentPublishedPosts = cache(
   async (limit: number = 2): Promise<RecentPost[]> => {
-    const sp = await createClient();
-    const session = await getSession();
-    if (!session?.user) return [];
+    try {
+      const { posts } = await getPaginatedPosts({
+        status: "published",
+        sortDirection: "latest",
+        limit
+      });
 
-    const authorId = session.user.email?.split("@")[0];
-    if (!authorId) return [];
-
-    const { data: posts, error } = await sp
-      .from("posts")
-      .select("id, title, subject, created_at, topic, class, chapter_no")
-      .eq("authorId", authorId)
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (error) {
+      return posts.map((post: Record<string, any>, index: number) => {
+        return {
+          id: index, // Using index as ID since DynamoDB items don't have auto-incrementing IDs
+          title: post.title,
+          date: post.createdAt ? formatTimeAgo(post.createdAt) : "",
+          slug: post.slug,
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching recent published posts:", error);
       return [];
     }
-
-    return posts.map((post) => {
-      const { generatedUrl } = generatePostUrl(post.subject, post.class, post.chapter_no, post.topic);
-      return {
-        id: post.id,
-        title: post.title,
-        date: formatTimeAgo(post.created_at),
-        url: generatedUrl,
-      };
-    });
   }
 );
 
 export const getRecentDraftPosts = cache(
   async (limit: number = 2): Promise<RecentPost[]> => {
-    const sp = await createClient();
-    const session = await getSession();
-    if (!session?.user) return [];
+    try {
+      const { posts } = await getPaginatedPosts({
+        status: "draft",
+        sortDirection: "latest",
+        limit
+      });
 
-    const authorId = session.user.email?.split("@")[0];
-    if (!authorId) return [];
-
-    const { data: posts, error } = await sp
-      .from("posts")
-      .select("id, title, created_at, subject, topic, class, chapter_no")
-      .eq("authorId", authorId)
-      .eq("status", "draft")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (error) {
+      return posts.map((post: any, index: number) => {
+        return {
+          id: index, // Using index as ID since DynamoDB items don't have auto-incrementing IDs
+          title: post.title,
+          date: post.createdAt ? formatTimeAgo(post.createdAt) : "",
+          slug: post.slug,
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching recent draft posts:", error);
       return [];
     }
+  }
+);
 
-    return posts.map((post) => {
-      const { generatedUrl } = generatePostUrl(post.subject, post.class, post.chapter_no, post.topic);
-      return {
-        id: post.id,
-        title: post.title,
-        date: formatTimeAgo(post.created_at),
-        url: generatedUrl,
-      };
-    });
+export const getRecentScheduledPosts = cache(
+  async (limit: number = 2): Promise<RecentPost[]> => {
+    try {
+      const { posts } = await getPaginatedPosts({
+        status: "scheduled",
+        sortDirection: "latest",
+        limit
+      });
+
+      return posts.map((post: any, index: number) => {
+        return {
+          id: index, // Using index as ID since DynamoDB items don't have auto-incrementing IDs
+          title: post.title,
+          date: post.createdAt ? formatTimeAgo(post.createdAt) : "",
+          slug: post.slug,
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching recent scheduled posts:", error);
+      return [];
+    }
   }
 );

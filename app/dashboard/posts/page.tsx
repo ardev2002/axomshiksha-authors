@@ -7,16 +7,18 @@ import AuthorPostCardSkeleton from "./components/AuthorPostCardSkeleton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import SearchForm from "./components/SearchPost";
+import { getPaginatedPosts } from "@/utils/post/get/action";
+import { DBPost } from "@/utils/types";
 
 export default async function Page({
   searchParams,
 }: PageProps<"/dashboard/posts">) {
-  const pagePromise = searchParams.then((sp) => sp.page);
   const statusPromise = searchParams.then((sp) => sp.status);
-  const classPromise = searchParams.then((sp) => sp.class);
-  const subjectPromise = searchParams.then((sp) => sp.subject);
   const sortbyPromise = searchParams.then((sp) => sp.sortby);
-
+  
+  const [status, sortby] = await Promise.all([statusPromise, sortbyPromise]) as [DBPost['status'] | undefined, "latest" | "oldest" | undefined];
+  const initialPostsPromise = getPaginatedPosts({ status, sortDirection: sortby });
+  
   return (
     <div className="space-y-6">
       <BreadCrumb
@@ -55,10 +57,7 @@ export default async function Page({
             }
           >
             <FilterSheet
-              pagePromise={pagePromise}
               statusPromise={statusPromise}
-              classPromise={classPromise}
-              subjectPromise={subjectPromise}
               sortbyPromise={sortbyPromise}
             />
           </Suspense>
@@ -71,11 +70,9 @@ export default async function Page({
 
       <Suspense fallback={<AuthorPostCardSkeleton />}>
         <AuthorPostsPage
-          pagePromise={pagePromise}
           statusPromise={statusPromise}
-          classPromise={classPromise}
-          subjectPromise={subjectPromise}
           sortbyPromise={sortbyPromise}
+          initialPostsPromise={initialPostsPromise}
         />
       </Suspense>
     </div>

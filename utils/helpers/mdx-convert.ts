@@ -89,10 +89,11 @@ export interface PostMetaForMDX {
   title: string;
   description: string;
   thumbnail: string;
-  reading_time: number | null;
-  class: string | null;
+  classLevel: string | null;
   subject: string | null;
-  chapter_no: number | null;
+  chapterNo: number | null;
+  readingTime: number | null;
+  createdAt: string | null;
 }
 
 /**
@@ -110,13 +111,13 @@ export function convertSectionsToMDXWithMeta(
   lines.push(
     `description: "${escapeYamlString(meta.description || "")}"`
   );
-  if (meta.class) lines.push(`class: "${escapeYamlString(meta.class || "")}"`);
+  if (meta.classLevel) lines.push(`classLevel: "${escapeYamlString(meta.classLevel || "")}"`);
   if (meta.subject) lines.push(`subject: "${escapeYamlString(meta.subject || "")}"`);
-  if (meta.chapter_no) lines.push(`chapter_no: ${meta.chapter_no || ""}`);
-  
+  if (meta.chapterNo) lines.push(`chapterNo: ${meta.chapterNo || ""}`);
   if (meta.thumbnail) lines.push(`thumbnail: "${escapeYamlString(meta.thumbnail)}"`);
-  if (meta.reading_time != null && !Number.isNaN(meta.reading_time)) {
-    lines.push(`reading_time: ${meta.reading_time}`);
+  if (meta.createdAt) lines.push(`createdAt: "${escapeYamlString(meta.createdAt)}"`);
+  if (meta.readingTime != null && !Number.isNaN(meta.readingTime)) {
+    lines.push(`readingTime: ${meta.readingTime}`);
   }
   lines.push("---");
   lines.push("");

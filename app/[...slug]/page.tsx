@@ -30,7 +30,7 @@ export default async function PostPage({ params }: PageProps<"/[...slug]">) {
   if (!post) return notFound();
   const command = new GetObjectCommand({
     Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
-    Key: post.content_key || undefined,
+    Key: post.contentKey || undefined,
   });
 
   const { Body } = await s3Client.send(command);
@@ -53,10 +53,10 @@ export default async function PostPage({ params }: PageProps<"/[...slug]">) {
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           <PostMetaDate date={post.created_at} />
-          {post.reading_time && <span>{data.reading_time} min read</span>}
-          {data.class && (
+          {post.readingTime && <span>{data.readingTime} min read</span>}
+          {data.classLevel && (
             <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs">
-              Class {data.class}
+              Class {data.classLevel}
             </span>
           )}
         </div>

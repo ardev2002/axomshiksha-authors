@@ -1,4 +1,3 @@
-// app/dashboard/posts/edit/EditPostClient.tsx
 "use client";
 
 import { useEffect, useState, startTransition, useActionState } from "react";
@@ -28,54 +27,43 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { editPost } from "@/utils/post/edit/action";
-import { Tables } from "@/utils/supabase/types";
+} from "@/components/ui/select"; import { editPost } from "@/utils/post/edit/action";
 import SectionsEditor from "../components/SectionsEditor";
 import type { Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
-import { SUBJECTS } from "@/utils/CONSTANT";
-
+import { SUBJECTS_BY_LEVEL, LEVELS } from "@/utils/CONSTANT";
 export default function EditPostClient({
   post,
   sections: initialSections,
-  authorId,
 }: {
-  post: Tables<"posts">;
+  post: Record<string, any>;
   sections?: Section[];
-  authorId: string | undefined;
 }) {
-  const [topic] = useState(post.topic); // locked
-  const [url] = useState(post.url); // locked unique full URL
-
-  const [title, setTitle] = useState(post.title);
-  const [thumbnail, setThumbnail] = useState(post.thumbnail);
-  const [desc, setDesc] = useState(post.desc);
-  const [classValue] = useState(post.class || ""); // locked
-  const [subject] = useState(post.subject || ""); // locked
-  const [chapterNo] = useState(post.chapter_no?.toString() || ""); // locked
+  const [title, setTitle] = useState(post.title || "");
+  const [description, setDescription] = useState(post.description);
   const [readingTime, setReadingTime] = useState(
-    post.reading_time?.toString() || ""
+    post.readingTime?.toString() || ""
   );
+  const [thumbnail, setThumbnail] = useState(post.thumbnail || "");
   const [sections, setSections] = useState<Section[]>(initialSections || []);
-  const [charLeft, setCharLeft] = useState(150 - (post.desc?.length || 0));
-
+  const [charLeft, setCharLeft] = useState(300 - (post.description?.length || 0));
   const [editState, editAction, isEditing] = useActionState(editPost, {});
 
   useEffect(() => {
-    setCharLeft(150 - desc.length);
-  }, [desc]);
+    setCharLeft(300 - (description?.length || 0));
+  }, [description]);
 
   const buildMDX = () =>
     convertSectionsToMDXWithMeta(sections, {
       title,
-      description: desc,
-      chapter_no: parseInt(chapterNo),
-      class: classValue,
-      reading_time: readingTime ? parseInt(readingTime) : null,
-      subject,
       thumbnail,
+      description,
+      chapterNo: parseInt(post.chapterNo),
+      readingTime: readingTime ? parseInt(readingTime) : null,
+      classLevel: post.classLevel,
+      createdAt: post.createdAt,
+      subject: post.subject,
     });
 
   const validateSections = () => {
@@ -209,23 +197,11 @@ export default function EditPostClient({
           </CardHeader>
 
           <CardContent className="space-y-5">
-            {/* Locked structural URL (full) */}
             <EnhancedInput
-              tooltipContent="Canonical URL (locked)"
-              type="text"
-              name="url"
-              value={url}
-              onChange={() => {}}
-              readOnly
-            />
-
-            {/* Topic (locked – structural) */}
-            <EnhancedInput
-              tooltipContent="Topic slug (locked after publish)"
+              tooltipContent="Topic (locked after publish)"
               type="text"
               name="topic"
-              value={topic}
-              onChange={() => {}}
+              defaultValue={post.topic}
               readOnly
             />
 
@@ -238,15 +214,16 @@ export default function EditPostClient({
               required
             />
 
-            {/* Description (editable) */}
+            {/* descriptionription (editable) */}
             <EnhancedTextArea
-              name="desc"
-              value={desc}
+              name="description"
+              value={description}
               charLeft={charLeft}
-              maxLength={150}
+              maxLength={300}
               onChange={(e) => {
-                setDesc(e.target.value);
-                setCharLeft(150 - e.target.value.length);
+                const value = e.target.value;
+                setDescription(value);
+                setCharLeft(300 - (value?.length || 0));
               }}
             />
 
@@ -261,18 +238,17 @@ export default function EditPostClient({
             {/* Subject / Class / Chapter – locked (once published) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
-                name="class"
-                value={classValue || ""}
+                name="classLevel"
+                defaultValue={post.classLevel || ""}
                 disabled
-                onValueChange={() => {}}
               >
                 <SelectTrigger className="hover:cursor-not-allowed border-white/20 bg-background/60 w-full">
-                  <SelectValue placeholder="Select Class" />
+                  <SelectValue placeholder="Select Class Level" />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem value={String(num)} key={num}>
-                      Class {num}
+                  {LEVELS.map((level) => (
+                    <SelectItem key={level.id} value={level.id}>
+                      {level.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -280,17 +256,16 @@ export default function EditPostClient({
 
               <Select
                 name="subject"
-                value={subject || ""}
+                defaultValue={post.subject || ""}
                 disabled
-                onValueChange={() => {}}
               >
                 <SelectTrigger className="hover:cursor-not-allowed border-white/20 bg-background/60 w-full">
                   <SelectValue placeholder="Select Subject" />
                 </SelectTrigger>
                 <SelectContent className="bg-background/95 border border-white/10">
-                  {Object.entries(SUBJECTS).map(([key, value]) => (
-                    <SelectItem value={value} key={value}>
-                      {key}
+                  {post.classLevel && SUBJECTS_BY_LEVEL[post.classLevel as keyof typeof SUBJECTS_BY_LEVEL]?.map((subjectOption) => (
+                    <SelectItem key={subjectOption.id} value={subjectOption.id}>
+                      {subjectOption.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -298,15 +273,15 @@ export default function EditPostClient({
 
               <Input
                 type="number"
-                name="chapter_no"
+                name="chapterNo"
                 placeholder="Chapter Number"
-                value={chapterNo}
-                readOnly
+                defaultValue={post.chapterNo}
+                disabled
               />
 
               <Input
                 type="number"
-                name="reading_time"
+                name="readingTime"
                 placeholder="Reading Time (minutes)"
                 value={readingTime}
                 onChange={(e) => setReadingTime(e.target.value)}
@@ -314,17 +289,16 @@ export default function EditPostClient({
               />
             </div>
 
-            <input type="hidden" name="authorId" value={authorId || ""} />
             <input type="hidden" name="thumbnail" value={thumbnail} />
-            <input type="hidden" name="class" value={classValue || ""} />
-            <input type="hidden" name="subject" value={subject || ""} />
-            <input type="hidden" name="chapter_no" value={chapterNo || ""} />
+            <input type="hidden" name="classLevel" value={post.classLevel || ""} />
+            <input type="hidden" name="subject" value={post.subject || ""} />
+            <input type="hidden" name="chapterNo" value={post.chapterNo || ""} />
             <input
               type="hidden"
-              name="reading_time"
+              name="readingTime"
               value={readingTime || ""}
             />
-            <input type="hidden" name="status" value={post.status || "draft"} />
+            <input type="hidden" name="status" value={post.status} />
           </CardContent>
         </Card>
 

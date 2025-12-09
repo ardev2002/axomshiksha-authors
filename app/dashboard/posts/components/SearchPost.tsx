@@ -9,8 +9,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import {
-  getPaginatedPosts,
-  GetPaginatedPostsResult,
+  searchPosts,
 } from "@/utils/post/get/action";
 import Link from "next/link";
 import DeletePost from "./DeletePost";
@@ -18,10 +17,10 @@ import DeletePost from "./DeletePost";
 export default function SearchPost() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GetPaginatedPostsResult["posts"]>();
-  const [page, setPage] = useState(1);
+  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [totalPages, setTotalPages] = useState<undefined | number>(undefined);
+  const [lastEvaluatedKey, setLastEvaluatedKey] = useState<Record<string, any> | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   // Helper function to highlight search terms
   const highlightText = (text: string, highlight: string) => {
@@ -97,7 +96,7 @@ export default function SearchPost() {
   }, []);
 
   // Debounced fetch function
-  const fetchResults = useCallback(async (q: string, p: number) => {
+  const fetchResults = useCallback(async (q: string) => {
     // Clear any existing debounce timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -110,7 +109,6 @@ export default function SearchPost() {
         setOpen(false);
         return;
       } else {
-        // Show dropdown when there's text
         setOpen(true);
       }
 
@@ -125,16 +123,12 @@ export default function SearchPost() {
       setLoading(true);
 
       try {
-        const { currentPage, posts, totalPages } = await getPaginatedPosts({
-          search: q,
-          page: p,
-        });
+        const { posts, nextKey } = await searchPosts(q);
 
         setResults(posts);
-        setTotalPages(totalPages);
+        setLastEvaluatedKey(nextKey);
+        setHasMore(!!nextKey);
         setLoading(false);
-
-        // Dropdown state is already handled above, no need to repeat here
       } catch (error) {
         if (error instanceof Error && error.name !== "AbortError") {
           setLoading(false);
@@ -148,7 +142,7 @@ export default function SearchPost() {
   }, []);
 
   useEffect(() => {
-    fetchResults(query, page);
+    fetchResults(query);
 
     // Cleanup function to clear timers and abort requests
     return () => {
@@ -159,12 +153,30 @@ export default function SearchPost() {
         abortControllerRef.current.abort();
       }
     };
-  }, [query, page, fetchResults]);
+  }, [query, fetchResults]);
 
   // Handle input focus to reopen dropdown if there's text in the search field
   const handleInputFocus = () => {
     if (query.trim()) {
       setOpen(true);
+    }
+  };
+
+  // Load more results
+  const loadMore = async () => {
+    if (!hasMore || !query.trim()) return;
+
+    setLoading(true);
+
+    try {
+      const { posts, nextKey } = await searchPosts(query, lastEvaluatedKey || undefined);
+
+      setResults(prev => [...prev, ...posts]);
+      setLastEvaluatedKey(nextKey);
+      setHasMore(!!nextKey);
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
     }
   };
 
@@ -179,7 +191,6 @@ export default function SearchPost() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              setPage(1);
             }}
             onFocus={handleInputFocus}
           />
@@ -196,107 +207,83 @@ export default function SearchPost() {
           className="absolute z-10 mt-2 w-full bg-muted border rounded-md shadow-lg"
         >
           <div className="p-3 space-y-3">
-            {loading ? (
+            {loading && results.length === 0 ? (
               <div className="flex justify-center py-6">
                 <Loader2 className="w-5 h-5 animate-spin" />
               </div>
-            ) : results && results.length === 0 ? (
+            ) : results.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No results found
               </p>
             ) : (
               <div className="space-y-3">
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {results &&
-                    results.map((item) => (
-                      <div
-                        key={item.id}
-                        className="p-2 rounded-md border hover:bg-accent"
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium">
-                              {highlightText(item.title, query)}
+                  {results.map((item) => (
+                    <div
+                      key={item.slug}
+                      className="p-2 rounded-md border hover:bg-accent"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">
+                            {highlightText(item.title, query)}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {item.classLevel && <p className="text-sm text-muted-foreground">
+                              {"|"} {item.classLevel}
+                            </p>}
+
+                            {item.subject && <p className="text-sm text-muted-foreground">
+                              {"|"} {item.subject}
+                            </p>}
+
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(item.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                }
+                              )}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-sm text-muted-foreground">
-                                Class {item.class}
-                              </p>
-                              <span className="text-xs text-muted-foreground">
-                                •
-                              </span>
-                              <p className="text-sm text-muted-foreground">
-                                {item.subject}
-                              </p>
-                              <span className="text-xs text-muted-foreground">
-                                •
-                              </span>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(item.created_at).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  }
-                                )}
-                              </p>
-                            </div>
                           </div>
-                          <div className="flex space-x-1">
-                            <Link
-                              href={`/dashboard/posts/edit?${
-                                item.subject ? `subject=${item.subject}` : ""
-                              }${item.class ? `&class=${item.class}` : ""}${
-                                item.chapter_no
-                                  ? `&chapter_no=${item.chapter_no}`
-                                  : ""
-                              }${item.topic ? `&topic=${item.topic}` : ""}${
-                                item.topic
-                              }`}
-                              className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
-                              title="Edit Post"
-                            >
-                              <Edit size={18} />
-                            </Link>
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <DeletePost
-                                postTitle={item.title}
-                                subject={item.subject}
-                                classValue={item.class}
-                                chapter_no={item.chapter_no}
-                                topic={item.topic}
-                                page={page}
-                              />
-                            </div>
+                        </div>
+                        <div className="flex space-x-1">
+                          <Link
+                            href={`/dashboard/posts/edit?slug=${item.slug}`}
+                            className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
+                            title="Edit Post"
+                          >
+                            <Edit size={18} />
+                          </Link>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DeletePost
+                              post={item}
+                            />
                           </div>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
 
-                {totalPages && totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-2">
+                {hasMore && (
+                  <div className="flex justify-center pt-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => p - 1)}
+                      disabled={loading}
+                      onClick={loadMore}
                     >
-                      Previous
-                    </Button>
-
-                    <span className="text-sm">
-                      Page {page} of {totalPages}
-                    </span>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={totalPages === undefined || page >= totalPages}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Next
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Loading...
+                        </>
+                      ) : (
+                        "Load More"
+                      )}
                     </Button>
                   </div>
                 )}

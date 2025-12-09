@@ -10,15 +10,14 @@ import {
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tables } from "@/utils/supabase/types";
 import { AlertTriangle, FileText } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction } from "react";
 
 interface DraftPostDialogProps {
-  draftPost: Partial<Tables<"posts">> | null;
+  draftPost: Record<string, any> | null;
   setDraftPost: Dispatch<
-    SetStateAction<Partial<Tables<"posts">> | null>
+    SetStateAction<Record<string, any> | null>
   >;
   draftPostConfirmation: boolean;
   setDraftPostConfirmation: Dispatch<SetStateAction<boolean>>;
