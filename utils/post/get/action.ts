@@ -68,12 +68,18 @@ export interface GetPaginatedPostsParams {
   lastKey?: Record<string, any>;
   sortDirection?: "latest" | "oldest";
   limit?: number,
-  status: DBPost['status'];
+  status: DBPost['status'] | "all";
 }
 
 export async function getPaginatedPosts(
   filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
+  // If status is "all", use the new function
+  if (filters.status === "all") {
+    // Omit the status property when passing to getAllPaginatedPosts
+    const { status, ...rest } = filters;
+    return getAllPaginatedPosts(rest as any);
+  }
 
   const authorId = (await getFreshUser())?.email?.split("@")[0];
 
@@ -178,5 +184,51 @@ export async function searchPosts(
   return {
     posts: result.Items || [],
     nextKey: result.LastEvaluatedKey || null,
+  };
+}
+
+// New function to get posts with all statuses
+export async function getAllPaginatedPosts(
+  filters: Omit<GetPaginatedPostsParams, 'status'> & { status?: "all" }
+): Promise<PaginatedPostsResponse> {
+  const authorId = (await getFreshUser())?.email?.split("@")[0];
+
+  // Run parallel queries for all three statuses
+  const [publishedResult, draftResult, scheduledResult] = await Promise.all([
+    getPaginatedPosts({ ...filters, status: "published" }),
+    getPaginatedPosts({ ...filters, status: "draft" }),
+    getPaginatedPosts({ ...filters, status: "scheduled" })
+  ]);
+
+  // Combine all posts
+  const allPosts = [
+    ...publishedResult.posts,
+    ...draftResult.posts,
+    ...scheduledResult.posts
+  ];
+
+  // Sort by entryTime according to sortDirection
+  allPosts.sort((a, b) => {
+    const timeA = new Date(a.entryTime).getTime();
+    const timeB = new Date(b.entryTime).getTime();
+    
+    if (filters.sortDirection === "latest") {
+      return timeB - timeA; // Newest first
+    } else {
+      return timeA - timeB; // Oldest first
+    }
+  });
+
+  // Apply limit
+  const limit = filters.limit || 10;
+  const limitedPosts = allPosts.slice(0, limit);
+
+  // For pagination with mixed statuses, we'll need to handle it differently
+  // For simplicity in this implementation, we're returning null for nextKey
+  // A more robust solution would track pagination state for each status separately
+  
+  return {
+    posts: limitedPosts,
+    nextKey: null // Simplified pagination for mixed statuses
   };
 }

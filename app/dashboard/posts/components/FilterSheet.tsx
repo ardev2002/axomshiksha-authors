@@ -33,7 +33,7 @@ export default function FilterSheet({
   sortbyPromise,
 }: FilterSheetProps) {
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(
-    (use(statusPromise) as string) || ""
+    (use(statusPromise) as string) || "all"
   );
 
   const [selectedSortOrder, setSelectedSortOrder] = useState<string | undefined>(
@@ -43,7 +43,7 @@ export default function FilterSheet({
   const formRef = useRef<HTMLFormElement>(null);
 
   const resetFilters = () => {
-    setSelectedStatus("");
+    setSelectedStatus("all");
     setSelectedSortOrder("");
     formRef.current?.reset();
   };
@@ -91,6 +91,8 @@ export default function FilterSheet({
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Added "All" option */}
+                  <SelectItem value="all">All</SelectItem>
                   {STATUSES.map((status) => (
                     <SelectItem key={status} value={status}>
                       {status.charAt(0).toUpperCase() + status.slice(1)}

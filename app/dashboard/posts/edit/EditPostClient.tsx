@@ -13,6 +13,7 @@ import {
   Home,
   Layers3,
   Layout,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import EnhancedInput from "@/components/custom/EnhancedInput";
@@ -33,6 +34,16 @@ import type { Section } from "../components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
 import { SUBJECTS_BY_LEVEL, LEVELS } from "@/utils/CONSTANT";
+// Add AlertDialog components for the publish notification
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+
 export default function EditPostClient({
   post,
   sections: initialSections,
@@ -49,10 +60,24 @@ export default function EditPostClient({
   const [sections, setSections] = useState<Section[]>(initialSections || []);
   const [charLeft, setCharLeft] = useState(300 - (post.description?.length || 0));
   const [editState, editAction, isEditing] = useActionState(editPost, {});
+  // State for the publish notification dialog
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
 
   useEffect(() => {
     setCharLeft(300 - (description?.length || 0));
   }, [description]);
+
+  // Check if the post is scheduled and its publish time has passed
+  useEffect(() => {
+    if (post.status === "scheduled" && post.publishTime) {
+      const publishDate = new Date(post.publishTime);
+      const now = new Date();
+
+      if (publishDate <= now) {
+        setShowPublishDialog(true);
+      }
+    }
+  }, [post]);
 
   const buildMDX = () =>
     convertSectionsToMDXWithMeta(sections, {
@@ -157,6 +182,29 @@ export default function EditPostClient({
           (editState as any).errorMsg ? [(editState as any).errorMsg] : []
         }
       />
+
+      {/* Publish Notification Dialog */}
+      <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-emerald-500" />
+              Post Published!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Your post is published just now
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end">
+            <AlertDialogAction 
+              onClick={() => setShowPublishDialog(false)}
+              className="bg-violet-600 hover:bg-violet-700 hover:cursor-pointer text-white"
+            >
+              Got it
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <form className="space-y-8" onSubmit={handleSubmit}>
         <div className="flex items-center justify-between border-b border-white/10 pb-4">

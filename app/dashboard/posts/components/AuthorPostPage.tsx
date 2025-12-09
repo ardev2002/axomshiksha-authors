@@ -23,7 +23,7 @@ export default function AuthorPostsPage({
 }: AuthorPostsPageProps) {
   const { posts: initialPosts, nextKey } = use(initialPostsPromise);
   const [sortby, setSortby] = useState<"latest" | "oldest" | undefined>(use(sortbyPromise) as "latest" | "oldest" | undefined);
-  const [status, setStatus] = useState<DBPost['status'] | undefined>(use(statusPromise) as DBPost['status'] | undefined);
+  const [status, setStatus] = useState<DBPost['status'] | "all" | undefined>(use(statusPromise) as DBPost['status'] | "all" | undefined);
   const [posts, setPosts] = useState<Record<string, any>[]>(initialPosts);
   const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | null>(nextKey);
   const [prevPaginateKeys, setPrevPaginateKeys] = useState<(Record<string, any> | null)[]>([]);
@@ -39,12 +39,13 @@ export default function AuthorPostsPage({
       const { posts: newPosts } = await getPaginatedPosts({ 
         lastKey: nextPaginateKey || undefined, 
         sortDirection: sortby, 
-        status: status || "published" 
+        status: status || "all" 
       });
       setPosts(newPosts);
     };
     fetchPosts();
   }, [status, sortby])
+
   const prevPostsHandler = async () => {
     const prevKey = prevPaginateKeys[prevPaginateKeys.length - 1];
     const newPrevKeys = prevPaginateKeys.slice(0, -1);
@@ -52,7 +53,7 @@ export default function AuthorPostsPage({
     const { posts: newPosts } = await getPaginatedPosts({ 
       lastKey: prevKey || undefined, 
       sortDirection: sortby,
-      status: status || "published"
+      status: status || "all"
     });
     
     setPosts(newPosts);
@@ -65,7 +66,7 @@ export default function AuthorPostsPage({
       lastKey: nextPaginateKey || undefined, 
       sortDirection: sortby, 
       limit: 10,
-      status: status || "published"
+      status: status || "all"
     });
     
     setPosts(newPosts);
