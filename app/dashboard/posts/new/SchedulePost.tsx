@@ -64,16 +64,14 @@ export default function SchedulePost({
       setSelectedMinute(minutes);
       setSelectedPeriod(period);
     } else {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      setDate(tomorrow);
+      const today = new Date();
+      setDate(today);
       setSelectedHour("9");
       setSelectedMinute("00");
       setSelectedPeriod("AM");
-    }
-  }, [initialDate, open]);
+    }  }, [initialDate, open]);
 
-  // Generate time options
+  // Generate time options - all minutes from 0 to 55 in 5-minute intervals
   const hours = Array.from({ length: 12 }, (_, i) => (i === 0 ? 12 : i));
   const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
 
@@ -100,14 +98,109 @@ export default function SchedulePost({
     onSchedule(scheduledDate);
   };
 
-  // Function to disable today and previous dates
+  // Function to disable past dates (allow today)
   const disablePastDates = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selectedDate = new Date(date);
     selectedDate.setHours(0, 0, 0, 0);
-    return selectedDate <= today;
+    return selectedDate < today;
   };
+
+  // Check if the selected date is today
+  const isToday = (someDate?: Date) => {
+    if (!someDate) return false;
+    const today = new Date();
+    return someDate.getDate() === today.getDate() &&
+           someDate.getMonth() === today.getMonth() &&
+           someDate.getFullYear() === today.getFullYear();
+  };
+
+  // Get available hours based on current time
+  const getAvailableHours = () => {
+    if (!isToday(date)) return hours;
+    
+    const now = new Date();
+    const currentHour = now.getHours();
+    // Convert to 12-hour format
+    let displayHour = currentHour % 12;
+    if (displayHour === 0) displayHour = 12;
+    
+    // If it's past 55 minutes, move to next hour
+    const currentMinute = now.getMinutes();
+    if (currentMinute > 55) {
+      return hours.filter(hour => {
+        if (displayHour === 12) {
+          return hour >= 1; // Next hour after 12 is 1
+        }
+        return hour >= displayHour + 1;
+      });
+    }
+    return hours.filter(hour => hour >= displayHour);
+  };
+
+  // Get available minutes based on current time
+  const getAvailableMinutes = () => {
+    if (!isToday(date)) return minutes;
+    
+    const now = new Date();
+    const currentHour = now.getHours();
+    let displayHour = currentHour % 12;
+    if (displayHour === 0) displayHour = 12;
+    
+    // Convert selected hour to 24-hour format for comparison
+    let selectedHour24 = parseInt(selectedHour);
+    if (selectedPeriod === 'PM' && selectedHour24 !== 12) {
+      selectedHour24 += 12;
+    } else if (selectedPeriod === 'AM' && selectedHour24 === 12) {
+      selectedHour24 = 0;
+    }
+    
+    // If not the current hour, return all minutes (5-minute intervals)
+    if (selectedHour24 !== currentHour) return minutes;
+    
+    // If it's the current hour, filter minutes (at least 5 minutes from now)
+    const currentMinute = now.getMinutes();
+    const cutoffMinute = currentMinute + 5;
+    
+    // Generate all minutes from cutoff minute to 59 in 5-minute intervals
+    const availableMinutes = [];
+    for (let min = 0; min < 60; min += 5) {
+      if (min >= cutoffMinute) {
+        availableMinutes.push(min.toString().padStart(2, '0'));
+      }
+    }
+    return availableMinutes;
+  };
+
+  // Reset time when date changes to today
+  useEffect(() => {
+    if (isToday(date)) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      let displayHour = currentHour % 12;
+      if (displayHour === 0) displayHour = 12;
+      
+      const currentMinute = now.getMinutes();
+      const nextInterval = Math.ceil((currentMinute + 5) / 5) * 5;
+      let displayMinute = nextInterval.toString().padStart(2, '0');
+      
+      // Handle overflow to next hour
+      if (nextInterval >= 60) {
+        displayHour = displayHour === 12 ? 1 : displayHour + 1;
+        displayMinute = "00";
+      }
+      
+      const period = currentHour >= 12 ? 'PM' : 'AM';
+      
+      setSelectedHour(displayHour.toString());
+      setSelectedMinute(displayMinute);
+      setSelectedPeriod(period);
+    }
+  }, [date]);
+
+  const availableHours = getAvailableHours();
+  const availableMinutes = getAvailableMinutes();
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -157,7 +250,7 @@ export default function SchedulePost({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-background/95 border border-white/10">
-                      {hours.map((hour) => (
+                      {availableHours.map((hour) => (
                         <SelectItem key={hour} value={hour.toString()}>
                           {hour}
                         </SelectItem>
@@ -174,7 +267,7 @@ export default function SchedulePost({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-background/95 border border-white/10">
-                      {minutes.map((minute) => (
+                      {availableMinutes.map((minute) => (
                         <SelectItem key={minute} value={minute}>
                           {minute}
                         </SelectItem>
@@ -204,6 +297,8 @@ export default function SchedulePost({
           <AlertDialogAction 
             className="bg-violet-600 hover:bg-violet-700 text-white hover:cursor-pointer"
             onClick={handleSchedule}
+            // Disable if no available minutes (meaning time has passed)
+            disabled={isToday(date) && availableMinutes.length === 0}
           >
             Schedule
           </AlertDialogAction>

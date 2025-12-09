@@ -1,18 +1,12 @@
 import * as motion from "motion/react-client";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import BreadCrumb from "@/components/custom/BreadCrumb";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   FileText,
   PenLine,
   BookOpen,
   Eye,
-  Heart,
-  Sparkles,
-  FileClock,
-  ExternalLink,
-  Edit3,
   Home,
   BarChart3,
   Layout,
@@ -21,43 +15,31 @@ import {
 import Link from "next/link";
 import { getAuthorPostStats } from "@/utils/helpers/getAuthorPostStats";
 import { formatNumber } from "@/utils/formatNumber";
-import {
-  getRecentPublishedPosts,
-  getRecentDraftPosts,
-  getRecentScheduledPosts,
-} from "@/utils/helpers/getRecentPosts";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RecentPostsCard } from "./components/RecentPostsCard";
 import { RecentPostsCardSkeleton } from "./components/RecentPostsCardSkeleton";
+import DashboardContent from "./components/DashboardContent";
+import { getRecentDraftPosts, getRecentPublishedPosts, getRecentScheduledPosts } from "@/utils/helpers/getRecentPosts";
 
-export default async function AuthorDashboardPage() {
+export default function AuthorDashboardPage() {
   return (
     <>
       <BreadCrumbAndHeader />
       <Suspense fallback={<StatsSkeleton />}>
         <Stats />
       </Suspense>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-hidden"
-      >
-        <Suspense fallback={<RecentlyPublishedPostsSkeleton />}>
-          <RecentlyPublishedPosts />
-        </Suspense>
-
-        <Suspense fallback={<DraftedPostsSkeleton />}>
-          <DraftedPosts />
-        </Suspense>
-        
-        <Suspense fallback={<RecentlyScheduledPostsSkeleton />}>
-          <RecentlyScheduledPosts />
-        </Suspense>
-      </motion.div>
+      <DashboardContentWrapper />
     </>
   );
+}
+
+async function DashboardContentWrapper() {
+  const statsResponse = await getAuthorPostStats();
+  const publishedResponse = await getRecentPublishedPosts(3);
+  const draftResponse = await getRecentDraftPosts(3);
+  const scheduledResponse = await getRecentScheduledPosts(3);
+
+  return <DashboardContent stats={statsResponse} publishedPosts={publishedResponse} draftPosts={draftResponse} scheduledPosts={scheduledResponse} />
 }
 
 export function BreadCrumbAndHeader() {
@@ -159,53 +141,7 @@ async function Stats() {
   );
 }
 
-async function RecentlyPublishedPosts() {
-  const statsData = await getAuthorPostStats();
-  const recentPublished = await getRecentPublishedPosts(3);
-  return (
-    <RecentPostsCard
-      title="Recently Published"
-      icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
-      badgeVariant="published"
-      totalCount={statsData?.totalPublishedPosts}
-      posts={recentPublished}
-      viewAllHref="/dashboard/posts?status=published"
-      isPublished={true}
-    />
-  );
-}
-
-async function DraftedPosts() {
-  const statsData = await getAuthorPostStats();
-  const draftedPosts = await getRecentDraftPosts(3);
-  return (
-    <RecentPostsCard
-      title="Drafted Posts"
-      icon={<FileClock className="w-4 h-4 text-amber-400" />}
-      badgeVariant="draft"
-      totalCount={statsData?.totalDraftPosts}
-      posts={draftedPosts}
-      viewAllHref="/dashboard/posts?status=draft"
-    />
-  );
-}
-
-async function RecentlyScheduledPosts() {
-  const statsData = await getAuthorPostStats();
-  const scheduledPosts = await getRecentScheduledPosts(3);
-  return (
-    <RecentPostsCard
-      title="Scheduled Posts"
-      icon={<Clock className="w-4 h-4 text-purple-400" />}
-      badgeVariant="scheduled"
-      totalCount={statsData?.totalScheduledPosts}
-      posts={scheduledPosts}
-      viewAllHref="/dashboard/posts?status=scheduled"
-    />
-  );
-}
-
-function StatsSkeleton() {
+export function StatsSkeleton() {
   return (
     <div className="grid gap-5 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
       {[...Array(5)].map((_, i) => (
@@ -226,14 +162,14 @@ function StatsSkeleton() {
   );
 }
 
-function RecentlyPublishedPostsSkeleton() {
+export function RecentlyPublishedPostsSkeleton() {
   return <RecentPostsCardSkeleton title="Recently Published" />;
 }
 
-function DraftedPostsSkeleton() {
+export function DraftedPostsSkeleton() {
   return <RecentPostsCardSkeleton title="Drafted Posts" />;
 }
 
-function RecentlyScheduledPostsSkeleton() {
+export function RecentlyScheduledPostsSkeleton() {
   return <RecentPostsCardSkeleton title="Scheduled Posts" />;
 }

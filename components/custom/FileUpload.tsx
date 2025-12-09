@@ -14,12 +14,14 @@ import { Upload, X } from "lucide-react";
 import { AspectRatio } from "../ui/aspect-ratio";
 export default function FileUpload({
   label,
+  editPage,
   onUploaded,
   onRemoved,
   imgType, // "thumbnail" | "block"
   currentImage,
 }: {
   label: string;
+  editPage?: boolean;
   onUploaded: (url: string, Key: string) => void;
   onRemoved?: (value: string) => void;
   imgType: "thumbnail" | "block";
@@ -30,17 +32,6 @@ export default function FileUpload({
   const [isLoading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    if (currentImage) {
-      const Key = currentImage.split(
-        `https://${process.env.NEXT_PUBLIC_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/`
-      )[1];
-
-      async function fetchPreview() {
-        const { signedUrl } = await getSignedUrlForDownload(Key);
-        setPreview(signedUrl);
-      }
-      fetchPreview();
-    }
     return () => {
       if (preview && !currentImage && Key) {
         onRemoved && onRemoved(Key);

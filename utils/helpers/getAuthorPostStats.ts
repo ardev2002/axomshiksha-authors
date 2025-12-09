@@ -1,11 +1,11 @@
-import "server-only";
+"use server";
 import { cache } from "react";
 import { db } from "@/lib/dynamoClient";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { Select } from "@aws-sdk/client-dynamodb";
 import { getFreshUser } from "./getFreshUser";
 
-interface AuthorPostStats {
+export interface AuthorPostStats {
   totalPosts: number;
   totalPublishedPosts: number;
   totalDraftPosts: number;
@@ -22,7 +22,7 @@ async function getCountByStatus(status: string): Promise<number> {
     // Use DynamoDB Query to count items with specific status
     const params = {
       TableName: process.env.AWS_POST_TABLE!,
-      IndexName: 'GSI_PublishedByDate',
+      IndexName: 'GSI_StatusEntryTime',
       KeyConditionExpression: "#status = :status",
       FilterExpression: "#authorId = :authorId",
       ExpressionAttributeNames: {

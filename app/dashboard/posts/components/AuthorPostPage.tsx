@@ -39,7 +39,7 @@ export default function AuthorPostsPage({
       const { posts: newPosts } = await getPaginatedPosts({ 
         lastKey: nextPaginateKey || undefined, 
         sortDirection: sortby, 
-        status
+        status: status || "published" 
       });
       setPosts(newPosts);
     };
@@ -52,7 +52,7 @@ export default function AuthorPostsPage({
     const { posts: newPosts } = await getPaginatedPosts({ 
       lastKey: prevKey || undefined, 
       sortDirection: sortby,
-      status
+      status: status || "published"
     });
     
     setPosts(newPosts);
@@ -65,7 +65,7 @@ export default function AuthorPostsPage({
       lastKey: nextPaginateKey || undefined, 
       sortDirection: sortby, 
       limit: 10,
-      status
+      status: status || "published"
     });
     
     setPosts(newPosts);
@@ -167,7 +167,7 @@ function PostCard({
               <span className="flex items-center gap-1">
                 <Eye size={14} />
               </span>
-              <PostMetaDate date={post.createdAt} />
+              <PostMetaDate date={post.entryTime} />
             </div>
           </div>
 

@@ -88,12 +88,11 @@ function escapeYamlString(value: string): string {
 export interface PostMetaForMDX {
   title: string;
   description: string;
-  thumbnail: string;
   classLevel: string | null;
   subject: string | null;
   chapterNo: number | null;
   readingTime: number | null;
-  createdAt: string | null;
+  entryTime: string | null;
 }
 
 /**
@@ -114,8 +113,7 @@ export function convertSectionsToMDXWithMeta(
   if (meta.classLevel) lines.push(`classLevel: "${escapeYamlString(meta.classLevel || "")}"`);
   if (meta.subject) lines.push(`subject: "${escapeYamlString(meta.subject || "")}"`);
   if (meta.chapterNo) lines.push(`chapterNo: ${meta.chapterNo || ""}`);
-  if (meta.thumbnail) lines.push(`thumbnail: "${escapeYamlString(meta.thumbnail)}"`);
-  if (meta.createdAt) lines.push(`createdAt: "${escapeYamlString(meta.createdAt)}"`);
+  if (meta.entryTime) lines.push(`entryTime: "${escapeYamlString(meta.entryTime)}"`);
   if (meta.readingTime != null && !Number.isNaN(meta.readingTime)) {
     lines.push(`readingTime: ${meta.readingTime}`);
   }

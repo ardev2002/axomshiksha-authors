@@ -238,7 +238,7 @@ export default function SearchPost() {
                             </p>}
 
                             <p className="text-xs text-muted-foreground">
-                              {new Date(item.createdAt).toLocaleDateString(
+                              {new Date(item.entryTime).toLocaleDateString(
                                 "en-US",
                                 {
                                   month: "short",

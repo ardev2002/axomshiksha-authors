@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { publishPost } from "@/utils/post/publish/action";
 import { saveDraft } from "@/utils/post/draft/action";
-import { schedulePost } from "@/utils/post/schedule/action"; // Added import
+import { schedulePost } from "@/utils/post/schedule/action";
 import {
   Select,
   SelectContent,
@@ -186,10 +186,9 @@ export default function AddPostPage() {
       description: description,
       chapterNo: parseInt(chapterNo),
       classLevel,
-      createdAt: new Date().toISOString(),
+      entryTime: new Date().toISOString(),
       readingTime: readingTime ? parseInt(readingTime) : null,
       subject,
-      thumbnail,
     });
 
   const validateSections = () => {
@@ -272,7 +271,7 @@ export default function AddPostPage() {
     formData.append("chapterNo", chapterNo);
     formData.append("readingTime", readingTime);
     formData.append("content", buildMDX());
-    formData.append("scheduledAt", utcString); // Add UTC string to form data
+    formData.append("scheduledAt", utcString);
 
     startTransition(() => {
       schedule(formData);
@@ -280,11 +279,11 @@ export default function AddPostPage() {
   };
 
   useEffect(() => {
-    if (publishState?.successMsg || draftState?.successMsg) {
+    if (publishState?.successMsg || draftState?.successMsg || scheduleState.successMsg) {
       isPostSavedRef.current = true;
       uploadedImagesRef.current.clear();
     }
-  }, [publishState, draftState]);
+  }, [publishState, draftState, scheduleState]);
 
   return (
     <>

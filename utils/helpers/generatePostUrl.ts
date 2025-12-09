@@ -1,4 +1,3 @@
-import { URLOptions } from "@/utils/types";
 import { removeWhiteSpaces } from "./removeWhiteSpaces";
 
 /**
@@ -23,13 +22,11 @@ export function generatePostUrl({
   const topicSlug = topic ? removeWhiteSpaces(topic) : "";
 
   const segments = [classSlug, subjectSlug, chapterSlug, topicSlug].filter(Boolean);
-
   const slug = segments.join("/");
-
   return { slug };
 }
 
-export function urlToContentKey(url: string): string {
-  const safe = url.replace(/\//g, "-");
-  return `md/${safe}.mdx`;
+export function urlToContentKey(slug: string): string {
+  const hyphenizedSlug = slug.replace(/\//g, "-");
+  return `md/${hyphenizedSlug}.mdx`;
 }

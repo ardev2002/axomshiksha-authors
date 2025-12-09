@@ -8,6 +8,7 @@ import { s3Client } from "@/lib/s3";
 import { urlToContentKey } from "./generatePostUrl";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "@/lib/dynamoClient";
+import { DBPost } from "../types";
 
 export interface SavedPostResult {
   successMsg?: string;
@@ -87,20 +88,33 @@ export async function saveToDB(
     }
 
     const authorId = (await getFreshUser())?.email?.split("@")[0];
+    const currentTimestamp = new Date().toISOString();
+
+    const item: Record<string, any> = {
+      slug,
+      title,
+      contentKey,
+      status,
+      authorId,
+      thumbnailKey: (rawPost.thumbnail as string).split(`https://${process.env.NEXT_PUBLIC_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/`)[1],
+      entryTime: currentTimestamp,
+    };
+
+    if (status === "published") {
+      item.publishTime = currentTimestamp;
+    }
+
+    if(status === "scheduled"){
+      item.publishTime = rawPost.scheduledAt;
+    }
 
     await db.send(new PutCommand({
       TableName: process.env.AWS_POST_TABLE!,
-      Item: {
-        slug,
-        title,
-        contentKey,
-        status,
-        authorId
-      }
+      Item: item
     }))
 
-    if(status === "scheduled"){
-      const res = await fetch("https://zzfcus8v5k.execute-api.ap-south-1.amazonaws.com/prod/schedule-post", {
+    if (status === "scheduled") {
+      await fetch("https://zzfcus8v5k.execute-api.ap-south-1.amazonaws.com/prod/schedule-post", {
         method: "POST",
         headers: {
           "x-api-key": process.env.API_KEY!,
@@ -108,23 +122,16 @@ export async function saveToDB(
         },
         body: JSON.stringify({
           slug,
-          at: rawPost.scheduledAt.slice(0, 19),
+          at: rawPost.scheduledAt,
         }),
       })
-
-      const data = await res.json();
-
-      console.log("Scheduled API Response: ", data);
-
-
-      if(data.ScheduleArn){
-        return { statusText: "ok" as const, successMsg: "Post scheduled successfully" };
-      }
     }
 
     const successMsg =
       status === "published"
         ? "Post published successfully"
+        : status === "scheduled"
+          ? "Post scheduled successfully"
           : "Draft saved successfully";
 
     await fetch("https://www.axomshiksha.com/api/revalidate", {
@@ -141,6 +148,7 @@ export async function saveToDB(
         const field = issue.path[0]?.toString() ?? "general";
         fieldErrors[field] = issue.message;
       });
+
       return {
         statusText: "fail" as const,
         fieldErrors,

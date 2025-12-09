@@ -14,7 +14,6 @@ export interface EditPostState {
   errorMsg?: string;
 }
 
-
 export async function editPost(
   state: EditPostState,
   formData: FormData

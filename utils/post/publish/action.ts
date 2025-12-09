@@ -9,7 +9,6 @@ export async function publishPost(
   formData: FormData
 ): Promise<SavedPostResult> {
   const raw = Object.fromEntries(formData);
-
   const subject = raw.subject as string
   const classLevel = raw.classLevel as string
   const chapterNo = raw.chapterNo ? parseInt(raw.chapterNo as string) : undefined;
@@ -29,7 +28,7 @@ export async function publishPost(
     description: raw.description as string,
     classLevel: raw.classLevel as string,
     subject: raw.subject as string,
-    chapterNo: chapterNo,
+    chapterNo,
     readingTime: Number(raw.readingTime as string),
     content: raw.content as string,
     status: "published" as const,

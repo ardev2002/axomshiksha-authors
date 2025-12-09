@@ -17,7 +17,7 @@ export default async function Page({
   const sortbyPromise = searchParams.then((sp) => sp.sortby);
   
   const [status, sortby] = await Promise.all([statusPromise, sortbyPromise]) as [DBPost['status'] | undefined, "latest" | "oldest" | undefined];
-  const initialPostsPromise = getPaginatedPosts({ status, sortDirection: sortby });
+  const initialPostsPromise = getPaginatedPosts({ status: status || "published", sortDirection: sortby });
   
   return (
     <div className="space-y-6">

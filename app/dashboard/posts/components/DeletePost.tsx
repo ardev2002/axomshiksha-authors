@@ -35,12 +35,14 @@ export default function DeletePost({
           className={`rounded-md p-2 transition hover:cursor-pointer text-red-500 hover:text-red-500`}
           title="Delete Post"
         >
-          {!isPending ? <Trash2 size={16} /> : <span>Deleting <Spinner /></span>}
+          {!isPending ? <Trash2 size={16} /> : <Spinner />}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <form action={action}>
           <input type="hidden" name="slug" value={post.slug} />
+          <input type="hidden" name="contentKey" value={post.contentKey} />
+          <input type="hidden" name="thumbnailKey" value={post.thumbnailKey} />
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -49,7 +51,7 @@ export default function DeletePost({
               and remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="mt-4">
             <AlertDialogCancel className="hover:cursor-pointer">
               Cancel
             </AlertDialogCancel>

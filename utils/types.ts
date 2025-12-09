@@ -14,6 +14,5 @@ export interface DBPost {
   status: "published" | "draft" | "scheduled";
   slug: string;
   contentKey: string;
-  createdAt?: string;
-  updatedAt?: string;
+  entryTime?: string;
 }

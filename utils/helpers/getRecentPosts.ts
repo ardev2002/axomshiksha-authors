@@ -1,9 +1,9 @@
-import "server-only";
+"use server";
 import { formatTimeAgo } from "@/utils/helpers/formatTimeAgo";
 import { cache } from "react";
 import { getPaginatedPosts } from "@/utils/post/get/action";
 
-interface RecentPost {
+export interface RecentPost {
   id: number;
   title: string;
   date: string;
@@ -23,7 +23,7 @@ export const getRecentPublishedPosts = cache(
         return {
           id: index, // Using index as ID since DynamoDB items don't have auto-incrementing IDs
           title: post.title,
-          date: post.createdAt ? formatTimeAgo(post.createdAt) : "",
+          date: post.entryTime ? formatTimeAgo(post.publishTime) : "",
           slug: post.slug,
         };
       });
@@ -47,7 +47,7 @@ export const getRecentDraftPosts = cache(
         return {
           id: index, // Using index as ID since DynamoDB items don't have auto-incrementing IDs
           title: post.title,
-          date: post.createdAt ? formatTimeAgo(post.createdAt) : "",
+          date: post.entryTime ? formatTimeAgo(post.entryTime) : "",
           slug: post.slug,
         };
       });
@@ -69,10 +69,11 @@ export const getRecentScheduledPosts = cache(
 
       return posts.map((post: any, index: number) => {
         return {
-          id: index, // Using index as ID since DynamoDB items don't have auto-incrementing IDs
+          id: index,
           title: post.title,
-          date: post.createdAt ? formatTimeAgo(post.createdAt) : "",
+          date: post.entryTime ? formatTimeAgo(post.publishTime) : "",
           slug: post.slug,
+          publishTime: post.publishTime
         };
       });
     } catch (error) {

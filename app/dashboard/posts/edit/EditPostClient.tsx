@@ -40,12 +40,12 @@ export default function EditPostClient({
   post: Record<string, any>;
   sections?: Section[];
 }) {
-  const [title, setTitle] = useState(post.title || "");
+  const [title, setTitle] = useState(post.title);
   const [description, setDescription] = useState(post.description);
   const [readingTime, setReadingTime] = useState(
     post.readingTime?.toString() || ""
   );
-  const [thumbnail, setThumbnail] = useState(post.thumbnail || "");
+  const [thumbnail, setThumbnail] = useState(post.thumbnail);
   const [sections, setSections] = useState<Section[]>(initialSections || []);
   const [charLeft, setCharLeft] = useState(300 - (post.description?.length || 0));
   const [editState, editAction, isEditing] = useActionState(editPost, {});
@@ -57,12 +57,11 @@ export default function EditPostClient({
   const buildMDX = () =>
     convertSectionsToMDXWithMeta(sections, {
       title,
-      thumbnail,
       description,
       chapterNo: parseInt(post.chapterNo),
       readingTime: readingTime ? parseInt(readingTime) : null,
       classLevel: post.classLevel,
-      createdAt: post.createdAt,
+      entryTime: post.entryTime,
       subject: post.subject,
     });
 
@@ -231,6 +230,7 @@ export default function EditPostClient({
             <FileUpload
               label="Post Thumbnail"
               imgType="thumbnail"
+              editPage={true}
               currentImage={thumbnail}
               onUploaded={(url) => setThumbnail(url)}
             />

@@ -8,6 +8,7 @@ import matter from "gray-matter";
 import { getFreshUser } from "@/utils/helpers/getFreshUser";
 import { DBPost } from "@/utils/types";
 import { extractPostUrlParams } from "@/utils/helpers/slugify";
+import { getSignedUrlForDownload } from "@/utils/s3/action";
 
 export async function getPost(postSlug: string) {
   const params: QueryCommandInput = {
@@ -23,7 +24,7 @@ export async function getPost(postSlug: string) {
 
   try {
     const { Items } = await db.send(new QueryCommand(params));
-    
+
     if (!Items) throw new Error("Post not found");
 
     const { Body } = await s3Client.send(new GetObjectCommand({
@@ -36,6 +37,8 @@ export async function getPost(postSlug: string) {
 
     const { data, content } = matter(rawContent);
 
+    const {signedUrl} = await getSignedUrlForDownload(Items?.[0]?.thumbnailKey);
+
     const postWithMetadata = {
       slug: Items?.[0]?.slug,
       topic: extractPostUrlParams(Items?.[0]?.slug)?.topic,
@@ -45,8 +48,8 @@ export async function getPost(postSlug: string) {
       classLevel: data.classLevel,
       subject: data.subject,
       description: data.description,
-      thumbnail: data.thumbnail,
-      createdAt: data.createdAt
+      thumbnail: signedUrl,
+      entryTime: data.entryTime
     }
 
     return { post: postWithMetadata || null, content };
@@ -65,18 +68,18 @@ export interface GetPaginatedPostsParams {
   lastKey?: Record<string, any>;
   sortDirection?: "latest" | "oldest";
   limit?: number,
-  status?: DBPost['status'];
+  status: DBPost['status'];
 }
 
 export async function getPaginatedPosts(
-  filters?: GetPaginatedPostsParams
+  filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
 
   const authorId = (await getFreshUser())?.email?.split("@")[0];
 
   const params: QueryCommandInput = {
     TableName: process.env.AWS_POST_TABLE!,
-    IndexName: 'GSI_PublishedByDate',
+    IndexName: 'GSI_StatusEntryTime',
     KeyConditionExpression: "#status = :status",
     FilterExpression: "#authorId = :authorId",
     ExpressionAttributeNames: {
@@ -84,7 +87,7 @@ export async function getPaginatedPosts(
       "#authorId": "authorId",
     },
     ExpressionAttributeValues: {
-      ":status": filters?.status || "published",
+      ":status": filters.status,
       ":authorId": authorId,
     },
     ScanIndexForward: filters?.sortDirection !== "latest",
@@ -95,17 +98,16 @@ export async function getPaginatedPosts(
     params.ExclusiveStartKey = filters?.lastKey;
   }
 
-  const {Items, LastEvaluatedKey} = await db.send(new QueryCommand(params));
-  
-  // Process items to add metadata from S3
+  const { Items, LastEvaluatedKey } = await db.send(new QueryCommand(params));
+
   if (Items && Items.length > 0) {
     const processedItems = await Promise.all(Items.map(async (item) => {
       try {
-        const {Body} = await s3Client.send(new GetObjectCommand({
-          Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME!, 
+        const { Body } = await s3Client.send(new GetObjectCommand({
+          Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME!,
           Key: item?.contentKey
         }));
-        
+
         if (Body) {
           const rawContent = await Body.transformToString();
           const { data } = matter(rawContent);
@@ -119,7 +121,7 @@ export async function getPaginatedPosts(
         return item;
       }
     }));
-    
+
     return {
       posts: processedItems,
       nextKey: LastEvaluatedKey || null,

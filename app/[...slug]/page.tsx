@@ -1,4 +1,3 @@
-import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote-client/rsc";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -9,28 +8,23 @@ import rehypePrettyCode from "rehype-pretty-code";
 import PostMetaDate from "@/components/custom/PostMetaDate";
 import Image from "next/image";
 import { getSignedUrlForDownload } from "@/utils/s3/action";
+import { db } from "@/lib/dynamoClient";
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 
 export default async function PostPage({ params }: PageProps<"/[...slug]">) {
-  const supabase = await createClient();
-
   const slugSegments = [...(await params).slug];
 
   const fullSlugPath = slugSegments.join("/");
 
-  const { data: post, error } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("url", fullSlugPath)
-    .maybeSingle();
-
-  if (error) {
-    return notFound();
-  }
+  const {Item: post} = await db.send(new GetCommand({ 
+    TableName: process.env.AWS_POST_TABLE!,
+    Key: { slug: fullSlugPath } 
+  }));
 
   if (!post) return notFound();
   const command = new GetObjectCommand({
     Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
-    Key: post.contentKey || undefined,
+    Key: post.contentKey,
   });
 
   const { Body } = await s3Client.send(command);
@@ -38,11 +32,7 @@ export default async function PostPage({ params }: PageProps<"/[...slug]">) {
 
   const { data, content: mdxContent } = matter(content as string);
 
-  const { signedUrl } = await getSignedUrlForDownload(
-    data?.thumbnail.split(
-      `https://${process.env.NEXT_PUBLIC_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/`
-    )[1] as string
-  );
+  const { signedUrl } = await getSignedUrlForDownload(post.thumbnailKey);
 
   return (
     <article className="mx-auto space-y-4">
