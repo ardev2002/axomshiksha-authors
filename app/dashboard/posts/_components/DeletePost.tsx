@@ -4,10 +4,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { Trash2, Clock, Calendar, Check } from "lucide-react";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -121,6 +119,9 @@ export default function DeletePost({
           <input type="hidden" name="slug" value={post.slug} />
           <input type="hidden" name="contentKey" value={post.contentKey} />
           <input type="hidden" name="thumbnailKey" value={post.thumbnailKey} />
+          <input type="hidden" name="status" value={post.status} />
+          <input type="hidden" name="publishTime" value={post.publishTime} />
+          
           <AlertDialogHeader className="mb-4">
             <AlertDialogTitle className="wrap-break-word">Are you absolutely sure?</AlertDialogTitle>
             {post.status === "published" ? (

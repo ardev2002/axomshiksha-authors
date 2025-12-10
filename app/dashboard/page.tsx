@@ -17,8 +17,8 @@ import { getAuthorPostStats } from "@/utils/helpers/getAuthorPostStats";
 import { formatNumber } from "@/utils/formatNumber";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RecentPostsCardSkeleton } from "./components/RecentPostsCardSkeleton";
-import DashboardContent from "./components/DashboardContent";
+import { RecentPostsCardSkeleton } from "./_components/RecentPostsCardSkeleton";
+import DashboardContent from "./_components/DashboardContent";
 import { getRecentDraftPosts, getRecentPublishedPosts, getRecentScheduledPosts } from "@/utils/helpers/getRecentPosts";
 
 export default function AuthorDashboardPage() {

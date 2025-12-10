@@ -1,7 +1,7 @@
 "use client";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, ChevronLeft, ChevronRight, Edit } from "lucide-react";
+import { Eye, ChevronLeft, ChevronRight, Edit, ExternalLink } from "lucide-react";
 import { getPaginatedPosts, PaginatedPostsResponse } from "@/utils/post/get/action";
 import Link from "next/link";
 import PostMetaDate from "@/components/custom/PostMetaDate";
@@ -10,6 +10,7 @@ import { DBPost } from "@/utils/types";
 import { use, useState, useEffect } from "react";
 import { MotionCard } from "@/components/custom/Motion";
 import { AnimatePresence, LayoutGroup } from "motion/react";
+import { inter } from "@/utils/fonts";
 
 interface AuthorPostsPageProps {
   statusPromise: Promise<string | string[] | undefined>;
@@ -160,10 +161,10 @@ function PostCard({
                   </span>}
                 </div>
 
-                <h3 className="font-semibold text-lg text-foreground truncate">
+                <h3 className={`font-semibold text-lg text-foreground truncate ${inter.className}`}>
                   {post.title}
                 </h3>
-                <p className="text-sm text-muted-foreground line-clamp-2 mt-2 mb-3 truncate">
+                <p className={`text-sm text-muted-foreground line-clamp-2 mt-2 mb-3 truncate ${inter.className}`}>
                   {post.description}
                 </p>
 
@@ -183,7 +184,7 @@ function PostCard({
                   className="text-emerald-400 hover:bg-emerald-400/10 rounded-md p-2 transition-colors duration-200"
                   title="View Post"
                 >
-                  <Eye size={18} />
+                  <ExternalLink size={18} />
                 </Link>}
 
                 {/* Edit Button */}

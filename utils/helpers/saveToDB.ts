@@ -91,7 +91,7 @@ export async function saveToDB(
     }
 
     if(status === "scheduled"){
-      item.publishTime = rawPost.scheduledt;
+      item.publishTime = rawPost.scheduledAt;
     }
 
     await db.send(new PutCommand({

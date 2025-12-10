@@ -1,5 +1,5 @@
 import EditPostClient from "@/app/dashboard/posts/edit/EditPostClient";
-import type { Section } from "@/app/dashboard/posts/components/sectionTypes";
+import type { Section } from "@/app/dashboard/posts/_components/sectionTypes";
 import { convertMDXToSections } from "@/utils/helpers/mdx-convert";
 import { getPost } from "@/utils/post/get/action";
 

@@ -6,9 +6,7 @@ import { Toaster } from "@/components/custom/Toaster";
 import Footer from "@/components/custom/Footer";
 import UserProvider from "@/components/custom/UserProvider";
 import { getSession } from "@/utils/helpers/getSession";
-import { Montserrat } from "next/font/google"
-
-const montserrat = Montserrat({ subsets: ["latin"], weight: "400" });
+import { montserrat } from "@/utils/fonts";
 
 export const metadata: Metadata = {
   title: "AxomShiksha - Study Materials, Notes & Learning Resources",

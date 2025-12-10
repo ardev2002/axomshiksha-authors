@@ -5,10 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertTriangle, X } from "lucide-react";
 import * as motion from "motion/react-client";
 import { Button } from "@/components/ui/button";
-import { Inter } from "next/font/google";
 import { Kbd } from "../ui/kbd";
-
-const inter = Inter({ subsets: ["latin"], weight: "400" });
+import { inter } from "@/utils/fonts";
 
 const ValidationErrorCard = ({ errors }: { errors: string[] }) => {
   const [visible, setVisible] = useState(true);

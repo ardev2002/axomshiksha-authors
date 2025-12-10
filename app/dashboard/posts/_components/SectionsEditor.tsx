@@ -37,7 +37,7 @@ import {
   Section,
   ContentBlock,
   ListGroupBlock,
-} from "@/app/dashboard/posts/components/sectionTypes";
+} from "@/app/dashboard/posts/_components/sectionTypes";
 import {
   MotionButton,
   MotionCardHeader,

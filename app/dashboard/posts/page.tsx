@@ -1,12 +1,12 @@
 import { Suspense } from "react";
-import AuthorPostsPage from "./components/AuthorPostPage";
+import AuthorPostsPage from "./_components/AuthorPostPage";
 import BreadCrumb from "@/components/custom/BreadCrumb";
 import { BookOpen, Home, Plus, Filter, Layout } from "lucide-react";
-import FilterSheet from "./components/FilterSheet";
-import AuthorPostCardSkeleton from "./components/AuthorPostCardSkeleton";
+import FilterSheet from "./_components/FilterSheet";
+import AuthorPostCardSkeleton from "./_components/AuthorPostCardSkeleton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import SearchForm from "./components/SearchPost";
+import SearchForm from "./_components/SearchPost";
 import { getPaginatedPosts } from "@/utils/post/get/action";
 import { DBPost } from "@/utils/types";
 
