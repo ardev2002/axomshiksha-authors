@@ -5,6 +5,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertTriangle, X } from "lucide-react";
 import * as motion from "motion/react-client";
 import { Button } from "@/components/ui/button";
+import { Inter } from "next/font/google";
+import { Kbd } from "../ui/kbd";
+
+const inter = Inter({ subsets: ["latin"], weight: "400" });
 
 const ValidationErrorCard = ({ errors }: { errors: string[] }) => {
   const [visible, setVisible] = useState(true);
@@ -14,7 +18,7 @@ const ValidationErrorCard = ({ errors }: { errors: string[] }) => {
     if (errors && errors.length > 0) {
       setVisible(true);
     }
-  }, [errors]);
+  }, [JSON.stringify(errors)]); // Use JSON.stringify to properly compare arrays
 
   if (!errors || errors.length === 0 || !visible) return null;
 
@@ -25,6 +29,7 @@ const ValidationErrorCard = ({ errors }: { errors: string[] }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.25 }}
+      className={inter.className}
     >
       <Card className="relative border border-amber-500/30 bg-amber-500/10 backdrop-blur-md text-amber-900 shadow-lg">
         {/* Dismiss Button */}
@@ -50,14 +55,27 @@ const ValidationErrorCard = ({ errors }: { errors: string[] }) => {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-2 pb-4">
-          <ul className="list-disc list-inside space-y-1.5 text-sm text-foreground/90">
-            {errors.map((err, index) => (
-              <li key={index} className="leading-snug">
-                {err}
-              </li>
-            ))}
-          </ul>
+        <CardContent className="pb-4">
+          <div className="space-y-2">
+            {errors.map((err, index) => {
+              // Split the error message into field name and error message
+              const colonIndex = err.indexOf(':');
+              const fieldName = colonIndex !== -1 ? err.substring(0, colonIndex) : err;
+              const errorMessage = colonIndex !== -1 ? err.substring(colonIndex + 1).trim() : '';
+
+              return (
+                <div key={index} className="flex items-center gap-2 text-sm text-foreground/90">
+                  <Kbd className="px-1.5 py-0.5 rounded leading-snug bg-background/50">
+                    {fieldName}
+                  </Kbd>
+                  <span className="leading-snug">:</span>
+                  <span className="leading-snug">
+                    {errorMessage}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
     </motion.div>

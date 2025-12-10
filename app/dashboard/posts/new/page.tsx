@@ -131,7 +131,7 @@ export default function AddPostPage() {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       cleanupOrphanedImagesClient();
       event.preventDefault();
-      event.returnValue = ''; // Required for Chrome < 119
+      event.returnValue = '';
       return '';
     };
 
@@ -156,6 +156,9 @@ export default function AddPostPage() {
             ([field, message]) => `${field}: ${message}`
           )
           : [];
+
+  // Clear errors when any submission is in progress
+  const displayErrors = (isPublishing || isSavingDraft || isScheduling) ? [] : allErrors;
 
   useEffect(() => {
     if (publishState?.successMsg) {
@@ -305,9 +308,7 @@ export default function AddPostPage() {
         ]}
       />
 
-      <ValidationErrorCard errors={allErrors} />
-
-      <DraftPostDialog
+      <ValidationErrorCard errors={displayErrors} />      <DraftPostDialog
         draftPost={draftPost}
         setDraftPost={setDraftPost}
         draftPostConfirmation={draftPostConfirmation}

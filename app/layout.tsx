@@ -6,6 +6,10 @@ import { Toaster } from "@/components/custom/Toaster";
 import Footer from "@/components/custom/Footer";
 import UserProvider from "@/components/custom/UserProvider";
 import { getSession } from "@/utils/helpers/getSession";
+import { Montserrat } from "next/font/google"
+
+const montserrat = Montserrat({ subsets: ["latin"], weight: "400" });
+
 export const metadata: Metadata = {
   title: "AxomShiksha - Study Materials, Notes & Learning Resources",
   description:
@@ -19,7 +23,7 @@ export default async function RootLayout({
 }>) {
   const sessionPromise = getSession();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={montserrat.className} suppressHydrationWarning>
       <body className={`antialiased`}>
         <ThemeProvider>
           <UserProvider sessionPromise={sessionPromise}>
