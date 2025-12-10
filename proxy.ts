@@ -7,14 +7,11 @@ export async function proxy(request: NextRequest) {
   const result = await updateSession(request);
   const { response, user } = result;
 
-  if (!user) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
   const isAuthor = AUTHORS.map((author) => author.id).includes(
-    user.email?.split("@")[0] as Author
+    user?.email?.split("@")[0] as Author
   );
 
-  if (!isAuthor) {
+  if (!user || !isAuthor) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

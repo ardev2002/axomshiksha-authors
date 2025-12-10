@@ -3,18 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ExternalLink, Edit3, CheckCheckIcon } from "lucide-react";
+import { ExternalLink, Edit3 } from "lucide-react";
 import { formatNumber } from "@/utils/formatNumber";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 
 interface RecentPost {
   id: number;
@@ -219,7 +211,7 @@ export function RecentPostsCard({
             </div>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground px-2">
+          <p className="text-sm text-muted-foreground px-2 flex justify-center">
             {badgeVariant === "published"
               ? "No published posts yet"
               : badgeVariant === "draft"

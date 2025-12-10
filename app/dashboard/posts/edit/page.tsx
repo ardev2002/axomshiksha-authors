@@ -9,10 +9,8 @@ export default async function EditPostPage({
   const postSlug = (await searchParams).slug as string;
 
   if (!postSlug) {
-    return (
-      <div className="text-center text-muted-foreground">Post not found</div>
-    );
-  }
+    return <span>Slug is required</span>
+  };
 
   const { post, content } = await getPost(postSlug);
 

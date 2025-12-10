@@ -6,13 +6,14 @@ import { Suspense } from "react";
 import ThemeSwitchButton from "./ThemeSwitchButton";
 import { Session } from "@supabase/supabase-js";
 import { signIn, signOut } from "@/utils/auth/action";
+import { Skeleton } from "../ui/skeleton";
 
 export default async function Header({
   sessionPromise,
 }: {
   sessionPromise: Promise<Session | null>;
 }) {
-  const session = await sessionPromise;
+ 
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg supports-backdrop-filter:bg-background/60 transition-colors duration-300">
@@ -27,23 +28,23 @@ export default async function Header({
               className="rounded-md"
             />
           </Link>
-          
+
           {/* Desktop Navigation Links - Left side with logo */}
           <div className="hidden md:flex items-center gap-6">
-            <Link 
-              href="/faq" 
+            <Link
+              href="/faq"
               className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               FAQ
             </Link>
-            <Link 
-              href="/about" 
+            <Link
+              href="/about"
               className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               About
             </Link>
-            <Link 
-              href="/contact" 
+            <Link
+              href="/contact"
               className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               Contact
@@ -54,18 +55,9 @@ export default async function Header({
         {/* Search and Theme Switch for desktop */}
         <div className="hidden md:flex items-center gap-2">
           <form>
-            <button
-              formAction={session ? signOut : signIn}
-              title={session ? "Sign out" : "Sign in"}
-              type="submit"
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:cursor-pointer transition"
-            >
-              {session ? (
-                <LogOut className="h-4 w-4"/>
-              ) : (
-                <LogIn className="h-4 w-4" />
-              )}
-            </button>
+            <Suspense fallback={<Skeleton className="h-4 w-4" />}>
+                <AuthButton sessionPromise={sessionPromise} />
+              </Suspense>
           </form>
           <ThemeSwitchButton />
         </div>
@@ -78,6 +70,25 @@ export default async function Header({
     </nav>
   );
 }
+
+async function AuthButton({ sessionPromise }: { sessionPromise: Promise<Session | null> }) {
+   const session = await sessionPromise;
+  return (
+    <button
+      formAction={session ? signOut : signIn}
+      title={session ? "Sign out" : "Sign in"}
+      type="submit"
+      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:cursor-pointer transition"
+    >
+      {session ? (
+        <LogOut className="h-4 w-4" />
+      ) : (
+        <LogIn className="h-4 w-4" />
+      )}
+    </button>
+  )
+}
+
 
 function MobileSidebarSkeleton() {
   return (

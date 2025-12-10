@@ -28,7 +28,9 @@ export default function AuthorDashboardPage() {
       <Suspense fallback={<StatsSkeleton />}>
         <Stats />
       </Suspense>
-      <DashboardContentWrapper />
+      <Suspense fallback={<AllRecentPostCardsSkeleton />}>
+        <DashboardContentWrapper />
+      </Suspense>
     </>
   );
 }
@@ -172,4 +174,13 @@ export function DraftedPostsSkeleton() {
 
 export function RecentlyScheduledPostsSkeleton() {
   return <RecentPostsCardSkeleton title="Scheduled Posts" />;
+}
+
+export function AllRecentPostCardsSkeleton() {
+  const titles = ["Recently Published", "Drafted Posts", "Scheduled Posts"];
+  return (
+    <motion.div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-hidden">
+      {titles.map((title, idx) => <RecentPostsCardSkeleton key={idx} title={title} />)}
+    </motion.div>
+  );
 }

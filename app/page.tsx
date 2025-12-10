@@ -1,46 +1,16 @@
-"use client";
-
-import { motion, AnimatePresence } from "motion/react";
+import * as motion from "motion/react-client";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, FileText, PenLine, Sparkles } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect, useContext } from "react";
-import { UserContext } from "@/components/custom/UserProvider";
-import { use } from "react";
-import { toast } from "sonner";
+import HomePageCarousel from "@/components/custom/HomePageCarousel";
+import { getFreshUser } from "@/utils/helpers/getFreshUser";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const sessionPromise = useContext(UserContext);
-  const session = use(sessionPromise);
-
-  // Auto-advance the carousel every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % features.length);
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const getIndices = () => {
-    const prevIndex = (currentIndex - 1 + features.length) % features.length;
-    const nextIndex = (currentIndex + 1) % features.length;
-    return { prevIndex, currentIndex, nextIndex };
-  };
-
-  const { prevIndex, nextIndex } = getIndices();
-
-  // Only show previous, current and next cards
-  const visibleIndices = [prevIndex, currentIndex, nextIndex];
-
-  const handleCTAClick = (e: React.MouseEvent) => {
-    if (!session) {
-      e.preventDefault();
-      toast.error("Authentication Required", {
-        description: "Please sign in to continue.",
-      });
-    }
+  const checkIsAuth = async () => {
+    "use server";
+    const user = await getFreshUser();
+    if (user) redirect("/dashboard");
+    else redirect("/login");
   };
 
   return (
@@ -93,23 +63,18 @@ export default function HomePage() {
           </motion.p>
 
           {/* Animated CTA Button */}
-          <motion.div
+          <motion.form
+            action={checkIsAuth}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
             className="flex justify-center gap-4"
           >
-            <Button asChild size="lg" className="group">
-              <Link 
-                href="/dashboard" 
-                className="flex items-center gap-2"
-                onClick={handleCTAClick}
-              >
-                Get Started
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+            <Button size="lg" className="group hover:cursor-pointer">
+              Get Started
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Button>
-          </motion.div>
+          </motion.form>
         </div>
       </div>
 
@@ -156,51 +121,7 @@ export default function HomePage() {
 
           {/* Desktop view - carousel */}
           <div className="hidden md:flex justify-center items-center overflow-hidden">
-            <motion.div
-              layout
-              className="relative w-full max-w-4xl bg-background/80 rounded-xl p-6 flex justify-center items-stretch"
-            >
-              <AnimatePresence initial={false} mode="popLayout">
-                {visibleIndices.map((index) => {
-                  const feature = features[index];
-                  const isCurrent = index === currentIndex;
-
-                  return (
-                    <motion.div
-                      key={feature.title}
-                      layout
-                      initial={{ opacity: 0, scale: 0.85, y: 20 }}
-                      animate={{
-                        opacity: isCurrent ? 1 : 0.7,
-                        scale: isCurrent ? 1.08 : 0.95,
-                        y: isCurrent ? -8 : 0,
-                        filter: isCurrent ? "blur(0px)" : "blur(0.5px)",
-                      }}
-                      exit={{ opacity: 0, scale: 0.85, y: 20 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 260,
-                        damping: 26,
-                      }}
-                      whileHover={isCurrent ? { scale: 1.12 } : {}}
-                      className={`mx-3 bg-card border ${
-                        isCurrent ? "border-violet-500 shadow-xl" : "border-accent shadow-md"
-                      } rounded-xl p-5 flex flex-col justify-between w-full max-w-sm`}
-                    >
-                      <div className="w-12 h-12 rounded-lg bg-violet-500/10 text-violet-500 flex items-center justify-center mb-4 self-center">
-                        {feature.icon}
-                      </div>
-                      <h3 className="text-lg md:text-xl font-semibold mb-2 text-center">
-                        {feature.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm text-center">
-                        {feature.description}
-                      </p>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </motion.div>
+            <HomePageCarousel />
           </div>
         </div>
       </div>
@@ -247,11 +168,12 @@ export default function HomePage() {
 
       {/* Final CTA */}
       <div className="container mx-auto px-4 py-16 md:py-24 text-center">
-        <motion.div
+        <motion.form
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
+          action={checkIsAuth}
         >
           <h2 className="text-2xl md:text-3xl font-bold mb-6">
             Ready to Transform Your Content Creation?
@@ -259,17 +181,11 @@ export default function HomePage() {
           <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
             Join thousands of educators who trust Axomshiksha to manage their educational content.
           </p>
-          <Button asChild size="lg" className="group">
-            <Link 
-              href="/dashboard" 
-              className="flex items-center gap-2 mx-auto"
-              onClick={handleCTAClick}
-            >
-              Start Creating
-              <Sparkles className="w-4 h-4 transition-transform group-hover:rotate-12" />
-            </Link>
+          <Button size="lg" className="group hover:cursor-pointer">
+            Start Creating
+            <Sparkles className="w-4 h-4 transition-transform group-hover:rotate-12" />
           </Button>
-        </motion.div>
+        </motion.form>
       </div>
     </div>
   );

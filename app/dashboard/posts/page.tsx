@@ -10,16 +10,13 @@ import SearchForm from "./components/SearchPost";
 import { getPaginatedPosts } from "@/utils/post/get/action";
 import { DBPost } from "@/utils/types";
 
-export default async function Page({
+export default async function DashboardPostPage({
   searchParams,
 }: PageProps<"/dashboard/posts">) {
+
   const statusPromise = searchParams.then((sp) => sp.status);
   const sortbyPromise = searchParams.then((sp) => sp.sortby);
-  
-  const [status, sortby] = await Promise.all([statusPromise, sortbyPromise]) as [DBPost['status'] | undefined, "latest" | "oldest" | undefined];
-  // Use "all" status by default to show all posts
-  const initialPostsPromise = getPaginatedPosts({ status: status || "all", sortDirection: sortby });
-  
+
   return (
     <div className="space-y-6">
       <BreadCrumb
@@ -64,18 +61,32 @@ export default async function Page({
           </Suspense>
         </div>
       </div>
-      {/* Search Form */}
+
       <div>
         <SearchForm />
       </div>
 
       <Suspense fallback={<AuthorPostCardSkeleton />}>
-        <AuthorPostsPage
-          statusPromise={statusPromise}
-          sortbyPromise={sortbyPromise}
-          initialPostsPromise={initialPostsPromise}
-        />
+        <AuthorPostPageDynamic statusPromise={statusPromise} sortbyPromise={sortbyPromise} />
       </Suspense>
     </div>
   );
+}
+
+async function AuthorPostPageDynamic({ statusPromise, sortbyPromise }:
+  {
+    sortbyPromise: Promise<string | string[] | undefined>,
+    statusPromise: Promise<string | string[] | undefined>,
+  }) {
+  const [status, sortby] = await Promise.all([statusPromise, sortbyPromise]) as [DBPost['status'] | undefined, "latest" | "oldest" | undefined];
+  const initialPostsPromise = getPaginatedPosts({ status: status || "all", sortDirection: sortby });
+  return (
+    <>
+      <AuthorPostsPage
+        statusPromise={statusPromise}
+        sortbyPromise={sortbyPromise}
+        initialPostsPromise={initialPostsPromise}
+      />
+    </>
+  )
 }
