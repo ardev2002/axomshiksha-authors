@@ -128,15 +128,17 @@ export default function AddPostPage() {
   };
 
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       cleanupOrphanedImagesClient();
+      event.preventDefault();
+      event.returnValue = ''; // Required for Chrome < 119
+      return '';
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      cleanupOrphanedImagesClient();
     };
   }, []);
 
@@ -186,7 +188,6 @@ export default function AddPostPage() {
       description: description,
       chapterNo: parseInt(chapterNo),
       classLevel,
-      entryTime: new Date().toISOString(),
       readingTime: readingTime ? parseInt(readingTime) : null,
       subject,
     });
@@ -279,7 +280,7 @@ export default function AddPostPage() {
   };
 
   useEffect(() => {
-    if (publishState?.successMsg || draftState?.successMsg || scheduleState.successMsg) {
+    if (publishState?.successMsg || draftState?.successMsg || scheduleState?.successMsg) {
       isPostSavedRef.current = true;
       uploadedImagesRef.current.clear();
     }

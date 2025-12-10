@@ -10,6 +10,7 @@ import {
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Kbd } from "@/components/ui/kbd";
 import { AlertTriangle, FileText } from "lucide-react";
 import Image from "next/image";
 import { Dispatch, SetStateAction } from "react";
@@ -25,12 +26,12 @@ interface DraftPostDialogProps {
   handleConfirmedPublish: () => Promise<void>;
 }
 
-export default function DraftPostDialog(props: DraftPostDialogProps) {
+export default function DraftPostDialog({ draftPost, setDraftPost, draftPostConfirmation, setDraftPostConfirmation, handleFreshPublish, handleConfirmedPublish }: DraftPostDialogProps) {
   return (
     <>
       <AlertDialog
-        open={props.draftPostConfirmation}
-        onOpenChange={props.setDraftPostConfirmation}
+        open={draftPostConfirmation}
+        onOpenChange={setDraftPostConfirmation}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -39,12 +40,12 @@ export default function DraftPostDialog(props: DraftPostDialogProps) {
               Existing Post Found
             </AlertDialogTitle>
             <AlertDialogDescription>
-              A draft post already exists with this URL. What would you like to
+              A draft post already exists with the slug <Kbd>{draftPost?.slug}</Kbd>. What would you like to
               do?
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {props.draftPost && (
+          {draftPost && (
             <Card className="border border-yellow-500/30 bg-yellow-500/5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-yellow-500/50 text-sm">
               <CardHeader className="pb-2 pt-3 space-y-2">
                 {/* Title Row */}
@@ -53,7 +54,7 @@ export default function DraftPostDialog(props: DraftPostDialogProps) {
                     <FileText className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
 
                     <CardTitle className="text-sm font-semibold truncate leading-tight">
-                      {props.draftPost.title}
+                      {draftPost.title}
                     </CardTitle>
                   </div>
 
@@ -65,31 +66,23 @@ export default function DraftPostDialog(props: DraftPostDialogProps) {
                 {/* Meta — all in one line */}
                 <div className="flex items-center gap-3 min-w-0 text-[11px]">
                   <div className="flex min-w-0 items-center gap-1">
-                    <span className="text-muted-foreground shrink-0">
-                      Class:
+                    {draftPost.title && <span className="text-muted-foreground shrink-0">
+                      {draftPost.classLevel}
+                    </span>}
+                    {draftPost.subject && <span className="capitalize truncate min-w-0">
+                      {draftPost.class}
                     </span>
-                    <span className="capitalize truncate min-w-0">
-                      {props.draftPost.class}
-                    </span>
-                  </div>
-                  
-                  <div className="flex min-w-0 items-center gap-1">
-                    <span className="text-muted-foreground shrink-0">
-                      Subject:
-                    </span>
-                    <span className="capitalize truncate min-w-0">
-                      {props.draftPost.subject}
-                    </span>
+                    }
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-2 pb-3">
-                {props.draftPost.thumbnail && (
+                {draftPost.thumbnail && (
                   <div className="overflow-hidden rounded-md border border-white/10 bg-background/50">
                     <AspectRatio ratio={8 / 3} className="bg-muted">
                       <Image
-                        src={props.draftPost.thumbnail}
+                        src={draftPost.thumbnail}
                         alt="Draft thumbnail"
                         fill
                         className="object-cover"
@@ -110,19 +103,19 @@ export default function DraftPostDialog(props: DraftPostDialogProps) {
               className="hover:cursor-pointer border-yellow-500/30 hover:bg-yellow-500/10"
               onClick={(e) => {
                 e.preventDefault();
-                props.handleFreshPublish();
+                handleFreshPublish();
               }}
             >
-              Fresh Publish
+              Continue Publish
             </Button>
             <Button
-              className="hover:cursor-pointer bg-violet-600 hover:bg-violet-700"
+              className="hover:cursor-pointer text-white bg-violet-600 hover:bg-violet-700"
               onClick={(e) => {
                 e.preventDefault();
-                props.handleConfirmedPublish();
+                handleConfirmedPublish();
               }}
             >
-              Proceed with Draft
+              Check Draft
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -29,5 +29,5 @@ export const fullPostSchema = z.object({
   readingTime: z.number().optional(),
   content: z.string().optional(),
   contentKey: z.string().optional(),
-  scheduled_at: z.string().optional(), // Changed from scheduledAt to match frontend
+  scheduledAt: z.string().optional(), // Changed from scheduledAt to match frontend
 });

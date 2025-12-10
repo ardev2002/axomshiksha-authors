@@ -7,6 +7,7 @@ import { ExternalLink, Edit3 } from "lucide-react";
 import { formatNumber } from "@/utils/formatNumber";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface RecentPost {
   id: number;
@@ -29,9 +30,9 @@ interface RecentPostsCardProps {
 }
 
 // CountdownTimer component for scheduled posts
-function CountdownTimer({ publishTime, slug, onPostPublished }: { publishTime?: string; slug?: string; onPostPublished?: () => void }) {
+export function CountdownTimer({ publishTime, onPostPublished }: { publishTime?: string; onPostPublished?: () => void }) {
   const [timeLeft, setTimeLeft] = useState<string>("");
-
+  const router = useRouter();
   useEffect(() => {
     if (!publishTime) return;
 
@@ -72,6 +73,7 @@ function CountdownTimer({ publishTime, slug, onPostPublished }: { publishTime?: 
         // Call the callback to notify parent component
         if (onPostPublished) {
           onPostPublished();
+          router.refresh();
         }
       }
     }, 1000);
@@ -184,7 +186,6 @@ export function RecentPostsCard({
                 {badgeVariant === "scheduled" && post.publishTime ? (
                   <CountdownTimer 
                     publishTime={post.publishTime} 
-                    slug={post.slug} 
                     onPostPublished={() => onPostStatusChange?.(post)} // Pass the callback
                   />
                 ) : (

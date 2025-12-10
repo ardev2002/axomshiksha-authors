@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Eye, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import { getPaginatedPosts, PaginatedPostsResponse } from "@/utils/post/get/action";
 import Link from "next/link";
-import ValidationErrorCard from "@/components/custom/ValidationErrorCard";
 import PostMetaDate from "@/components/custom/PostMetaDate";
 import DeletePost from "./DeletePost";
 import { DBPost } from "@/utils/types";
 import { use, useState, useEffect } from "react";
+import { MotionCard } from "@/components/custom/Motion";
+import { AnimatePresence, LayoutGroup } from "motion/react";
 
 interface AuthorPostsPageProps {
   statusPromise: Promise<string | string[] | undefined>;
@@ -27,19 +28,19 @@ export default function AuthorPostsPage({
   const [posts, setPosts] = useState<Record<string, any>[]>(initialPosts);
   const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | null>(nextKey);
   const [prevPaginateKeys, setPrevPaginateKeys] = useState<(Record<string, any> | null)[]>([]);
-  
+
   useEffect(() => {
-      setPosts(initialPosts);
-      setNextPaginateKey(nextKey);
-      setPrevPaginateKeys([]);
+    setPosts(initialPosts);
+    setNextPaginateKey(nextKey);
+    setPrevPaginateKeys([]);
   }, [initialPosts, nextKey]);
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const { posts: newPosts } = await getPaginatedPosts({ 
-        lastKey: nextPaginateKey || undefined, 
-        sortDirection: sortby, 
-        status: status || "all" 
+      const { posts: newPosts } = await getPaginatedPosts({
+        lastKey: nextPaginateKey || undefined,
+        sortDirection: sortby,
+        status: status || "all"
       });
       setPosts(newPosts);
     };
@@ -49,26 +50,26 @@ export default function AuthorPostsPage({
   const prevPostsHandler = async () => {
     const prevKey = prevPaginateKeys[prevPaginateKeys.length - 1];
     const newPrevKeys = prevPaginateKeys.slice(0, -1);
-    
-    const { posts: newPosts } = await getPaginatedPosts({ 
-      lastKey: prevKey || undefined, 
+
+    const { posts: newPosts } = await getPaginatedPosts({
+      lastKey: prevKey || undefined,
       sortDirection: sortby,
       status: status || "all"
     });
-    
+
     setPosts(newPosts);
     setNextPaginateKey(prevKey);
     setPrevPaginateKeys(newPrevKeys);
   };
 
   const nextPostsHandler = async () => {
-    const { posts: newPosts, nextKey: newNextKey } = await getPaginatedPosts({ 
-      lastKey: nextPaginateKey || undefined, 
-      sortDirection: sortby, 
+    const { posts: newPosts, nextKey: newNextKey } = await getPaginatedPosts({
+      lastKey: nextPaginateKey || undefined,
+      sortDirection: sortby,
       limit: 10,
       status: status || "all"
     });
-    
+
     setPosts(newPosts);
     setNextPaginateKey(newNextKey);
     setPrevPaginateKeys([...prevPaginateKeys, nextPaginateKey]);
@@ -88,7 +89,7 @@ export default function AuthorPostsPage({
           <PostCard key={post.slug} post={post} />
         ))}
       </div>
-      
+
       {(nextPaginateKey) && (
         <div className="flex justify-center items-center gap-4 pt-6 border-t border-accent">
           <Button
@@ -137,68 +138,72 @@ function PostCard({
   };
 
   return (
-    <Card className="border border-accent bg-background/70 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden hover:bg-background/80">
-      <CardContent className="p-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${getStatusBadgeClass(
-                  post.status
-                )}`}
-              >
-                {post.status?.charAt(0).toUpperCase() + post.status!.slice(1)}
-              </span>
-              {post.classLevel && <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
-                {post.classLevel}
-              </span>}
-              {post.subject && <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
-                {post.subject}
-              </span>}
+    <LayoutGroup id="post">
+      <AnimatePresence mode="wait">
+        <MotionCard layout className="border border-accent bg-background/70 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden hover:bg-background/80">
+          <CardContent className="p-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${getStatusBadgeClass(
+                      post.status
+                    )}`}
+                  >
+                    {post.status?.charAt(0).toUpperCase() + post.status!.slice(1)}
+                  </span>
+                  {post.classLevel && <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
+                    {post.classLevel}
+                  </span>}
+                  {post.subject && <span className="text-xs capitalize border border-white/10 px-2 py-1 rounded-full">
+                    {post.subject}
+                  </span>}
+                </div>
+
+                <h3 className="font-semibold text-lg text-foreground truncate">
+                  {post.title}
+                </h3>
+                <p className="text-sm text-muted-foreground line-clamp-2 mt-2 mb-3 truncate">
+                  {post.description}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Eye size={14} />
+                  </span>
+                  <PostMetaDate date={post.entryTime} />
+                </div>
+              </div>
+
+              {/* Right Side Buttons */}
+              <div className="flex items-center gap-2">
+                {post.status == "published" && <Link
+                  href={`https://axomshiksha.com/${post.slug}`}
+                  target="_blank"
+                  className="text-emerald-400 hover:bg-emerald-400/10 rounded-md p-2 transition-colors duration-200"
+                  title="View Post"
+                >
+                  <Eye size={18} />
+                </Link>}
+
+                {/* Edit Button */}
+                <Link
+                  href={`/dashboard/posts/edit?slug=${post.slug}`}
+                  className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
+                  title="Edit Post"
+                >
+                  <Edit size={18} />
+                </Link>
+
+                {/* Delete Button */}
+                <DeletePost
+                  post={post}
+                />
+              </div>
             </div>
-
-            <h3 className="font-semibold text-lg text-foreground truncate">
-              {post.title}
-            </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-2 mb-3 truncate">
-              {post.description}
-            </p>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Eye size={14} />
-              </span>
-              <PostMetaDate date={post.entryTime} />
-            </div>
-          </div>
-
-          {/* Right Side Buttons */}
-          <div className="flex items-center gap-2">
-            <Link
-              href={`https://axomshiksha.com/${post.slug}`}
-              target="_blank"
-              className="text-emerald-400 hover:bg-emerald-400/10 rounded-md p-2 transition-colors duration-200"
-              title="View Post"
-            >
-              <Eye size={18} />
-            </Link>
-
-            {/* Edit Button */}
-            <Link
-              href={`/dashboard/posts/edit?slug=${post.slug}`}
-              className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
-              title="Edit Post"
-            >
-              <Edit size={18} />
-            </Link>
-
-            {/* Delete Button */}
-            <DeletePost
-              post={post}
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </MotionCard>
+      </AnimatePresence>
+    </LayoutGroup>
   );
 }

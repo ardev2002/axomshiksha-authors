@@ -20,7 +20,7 @@ export async function publishPost(
     chapterNo,
     topic
   });
-
+  
   const publishablePost = {
     topic,
     title: raw.title as string,

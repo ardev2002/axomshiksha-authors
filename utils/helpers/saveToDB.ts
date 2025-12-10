@@ -8,7 +8,6 @@ import { s3Client } from "@/lib/s3";
 import { urlToContentKey } from "./generatePostUrl";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "@/lib/dynamoClient";
-import { DBPost } from "../types";
 
 export interface SavedPostResult {
   successMsg?: string;
@@ -16,7 +15,7 @@ export interface SavedPostResult {
   statusText: "ok" | "fail" | "not_submitted";
   fieldErrors?: Record<string, string>;
   values?: Record<string, string | number>;
-  draftPost?: object | null;
+  draftPost?: Record<string, any> | null;
   requiresConfirmation?: boolean;
 }
 
@@ -37,13 +36,6 @@ export async function saveToDB(
     let draftPost: Record<string, any> | undefined | null = null;
 
     if (status === "published" && !confirmed) {
-      if (!slug) {
-        return {
-          statusText: "fail",
-          errTopicMsg: "Invalid URL options. Please try again.",
-        };
-      }
-
       const result = await checkUrlAvailability(slug);
 
       isAvailable = result.isAvailable;
@@ -54,11 +46,7 @@ export async function saveToDB(
         return {
           statusText: "fail" as const,
           requiresConfirmation: true,
-          draftPost: {
-            slug: draftPost.slug,
-            title: draftPost.title,
-            status: draftPost.status,
-          },
+          draftPost
         };
       }
     }
@@ -67,12 +55,11 @@ export async function saveToDB(
       return { statusText: "fail" as const, errTopicMsg: errMsg };
     }
 
-
     let contentKey: string | null = null;
 
     if (content && (status === "published" || status === "draft" || status === "scheduled")) {
       const command = new PutObjectCommand({
-        Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
+        Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME!,
         Key: urlToContentKey(slug),
         Body: content,
         ContentType: "text/markdown",
@@ -82,7 +69,6 @@ export async function saveToDB(
         await s3Client.send(command);
         contentKey = urlToContentKey(slug);
       } catch (error) {
-        console.error("Error uploading content to S3:", error);
         throw new Error("Failed to upload content to S3");
       }
     }
@@ -96,7 +82,7 @@ export async function saveToDB(
       contentKey,
       status,
       authorId,
-      thumbnailKey: (rawPost.thumbnail as string).split(`https://${process.env.NEXT_PUBLIC_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/`)[1],
+      thumbnailKey: (rawPost.thumbnail as string).split(`https://${process.env.NEXT_PUBLIC_BUCKET_NAME!}.s3.ap-south-1.amazonaws.com/`)[1],
       entryTime: currentTimestamp,
     };
 
@@ -105,7 +91,7 @@ export async function saveToDB(
     }
 
     if(status === "scheduled"){
-      item.publishTime = rawPost.scheduledAt;
+      item.publishTime = rawPost.scheduledt;
     }
 
     await db.send(new PutCommand({

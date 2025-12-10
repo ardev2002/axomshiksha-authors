@@ -92,7 +92,6 @@ export interface PostMetaForMDX {
   subject: string | null;
   chapterNo: number | null;
   readingTime: number | null;
-  entryTime: string | null;
 }
 
 /**
@@ -113,7 +112,6 @@ export function convertSectionsToMDXWithMeta(
   if (meta.classLevel) lines.push(`classLevel: "${escapeYamlString(meta.classLevel || "")}"`);
   if (meta.subject) lines.push(`subject: "${escapeYamlString(meta.subject || "")}"`);
   if (meta.chapterNo) lines.push(`chapterNo: ${meta.chapterNo || ""}`);
-  if (meta.entryTime) lines.push(`entryTime: "${escapeYamlString(meta.entryTime)}"`);
   if (meta.readingTime != null && !Number.isNaN(meta.readingTime)) {
     lines.push(`readingTime: ${meta.readingTime}`);
   }

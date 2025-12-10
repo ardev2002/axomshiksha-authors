@@ -86,7 +86,6 @@ export default function EditPostClient({
       chapterNo: parseInt(post.chapterNo),
       readingTime: readingTime ? parseInt(readingTime) : null,
       classLevel: post.classLevel,
-      entryTime: post.entryTime,
       subject: post.subject,
     });
 
@@ -118,15 +117,7 @@ export default function EditPostClient({
         })
     );
 
-    if (!hasContent) {
-      toast.error("Validation Error", {
-        description:
-          "Please add at least one section with content before updating.",
-      });
-      return false;
-    }
-
-    return true;
+    return hasContent;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -278,7 +269,6 @@ export default function EditPostClient({
             <FileUpload
               label="Post Thumbnail"
               imgType="thumbnail"
-              editPage={true}
               currentImage={thumbnail}
               onUploaded={(url) => setThumbnail(url)}
             />

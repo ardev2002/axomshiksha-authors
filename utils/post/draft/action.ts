@@ -41,7 +41,7 @@ export async function saveDraft(
     readingTime: parseOptionalNumber(raw.readingTime as string), // Handle empty strings
     content: raw.content as string,
     status: "draft" as const,
-    scheduled_at: undefined, // Will be handled by Zod schema
+    scheduledAt: undefined, // Will be handled by Zod schema
   };
 
   return await saveToDB(draft, slug);

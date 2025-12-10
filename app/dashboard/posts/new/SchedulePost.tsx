@@ -39,7 +39,7 @@ export default function SchedulePost({
   onSchedule,
   initialDate,
 }: SchedulePostProps) {
-  const [date, setDate] = useState<Date | undefined>(initialDate || new Date());
+  const [date, setDate] = useState<Date | undefined>(initialDate);
   const [selectedHour, setSelectedHour] = useState<string>("12");
   const [selectedMinute, setSelectedMinute] = useState<string>("00");
   const [selectedPeriod, setSelectedPeriod] = useState<"AM" | "PM">("AM");

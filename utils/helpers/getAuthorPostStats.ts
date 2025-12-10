@@ -36,8 +36,8 @@ async function getCountByStatus(status: string): Promise<number> {
       Select: Select.COUNT // This makes it a count query
     };
 
-    const result = await db.send(new QueryCommand(params));
-    return result.Count || 0;
+    const { Count } = await db.send(new QueryCommand(params));
+    return Count || 0;
   } catch (error) {
     console.error(`Error fetching count for status ${status}:`, error);
     return 0;

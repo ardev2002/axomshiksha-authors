@@ -1,6 +1,7 @@
 import * as z from "zod";
 import { db } from "@/lib/dynamoClient";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
+import { getPost } from "../post/get/action";
 
 export interface CheckUrl {
   isAvailable: boolean;
@@ -13,20 +14,14 @@ export async function checkUrlAvailability(
   slug: string
 ): Promise<CheckUrl> {
   try {
-    const getCmd = new GetCommand({
-      TableName: process.env.AWS_POST_TABLE,
-      Key: { slug },
-    });
+    const {post} = await getPost(slug)
+    if (!post) return { isAvailable: true, successMsg: "URL is available" };
 
-    const { Item } = await db.send(getCmd);
-
-    if (!Item) return { isAvailable: true, successMsg: "URL is available" };
-
-    if (Item.status === "draft") {
+    if (post.status === "draft") {
       return {
         isAvailable: true,
         successMsg: "URL is available",
-        draftPost: Item,
+        draftPost: post,
       };
     }
 

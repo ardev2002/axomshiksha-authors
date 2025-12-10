@@ -9,8 +9,9 @@ import { getFreshUser } from "@/utils/helpers/getFreshUser";
 import { DBPost } from "@/utils/types";
 import { extractPostUrlParams } from "@/utils/helpers/slugify";
 import { getSignedUrlForDownload } from "@/utils/s3/action";
+import { cacheTag } from "next/cache";
 
-export async function getPost(postSlug: string) {
+export async function getPost(slug: string) {
   const params: QueryCommandInput = {
     TableName: process.env.AWS_POST_TABLE!,
     KeyConditionExpression: "#slug = :slug",
@@ -18,7 +19,7 @@ export async function getPost(postSlug: string) {
       "#slug": "slug",
     },
     ExpressionAttributeValues: {
-      ":slug": postSlug,
+      ":slug": slug,
     },
   };
 
@@ -34,22 +35,21 @@ export async function getPost(postSlug: string) {
 
     if (!Body) throw new Error("Post content not found");
     const rawContent = await Body.transformToString();
-
     const { data, content } = matter(rawContent);
-
     const {signedUrl} = await getSignedUrlForDownload(Items?.[0]?.thumbnailKey);
 
     const postWithMetadata = {
       slug: Items?.[0]?.slug,
       topic: extractPostUrlParams(Items?.[0]?.slug)?.topic,
       title: Items?.[0]?.title,
+      status: Items?.[0]?.status,
+      entryTime: Items?.[0]?.entryTime,
       chapterNo: data.chapterNo,
       readingTime: data.readingTime,
       classLevel: data.classLevel,
       subject: data.subject,
       description: data.description,
       thumbnail: signedUrl,
-      entryTime: data.entryTime
     }
 
     return { post: postWithMetadata || null, content };
@@ -75,6 +75,8 @@ export async function getPaginatedPosts(
   filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
   "use cache: private"
+  cacheTag("posts");
+  
   if (filters.status === "all") {
     // Omit the status property when passing to getAllPaginatedPosts
     const { status, ...rest } = filters;
@@ -163,14 +165,14 @@ export async function searchPosts(
 ): Promise<PaginatedPostsResponse> {
   const params: ScanCommandInput = {
     TableName: process.env.AWS_POST_TABLE!,
-    FilterExpression: "contains(#title, :searchTerm) AND #status = :published",
+    FilterExpression: "contains(#title, :searchTerm) AND #status = :status",
     ExpressionAttributeNames: {
       "#title": "title",
       "#status": "status",
     },
     ExpressionAttributeValues: {
       ":searchTerm": searchTerm,
-      ":published": "published",
+      ":status": "published",
     },
     Limit: limit,
   };
