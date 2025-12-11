@@ -2,7 +2,7 @@
 import { motion } from "motion/react";
 import { AuthorPostStats } from "@/utils/helpers/getAuthorPostStats";
 import { RecentPost } from "@/utils/helpers/getRecentPosts";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RecentPostsCard } from "./RecentPostsCard";
 import { Clock, FileClock, Sparkles } from "lucide-react";
 // Create a client component for the dynamic content
@@ -25,6 +25,13 @@ export default function DashboardContent({ stats, publishedPosts, draftPosts, sc
     setRecentScheduled((prev) => prev.filter((post) => post.id !== id));
   }, []);
 
+  useEffect(() => {
+    setStatsData(stats);
+    setRecentPublished(publishedPosts);
+    setRecentDrafts(draftPosts);
+    setRecentScheduled(scheduledPosts);
+  }, [stats, publishedPosts, draftPosts, scheduledPosts]);
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}

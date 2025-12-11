@@ -74,6 +74,8 @@ export interface GetPaginatedPostsParams {
 export async function getPaginatedPosts(
   filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
+  "use cache: private"
+  cacheTag(`posts-${filters.status}`)
   if (filters.status === "all") {
     const { status, ...rest } = filters;
     return getAllPaginatedPosts(rest as any);
