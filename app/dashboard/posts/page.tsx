@@ -1,91 +1,17 @@
-import { Suspense } from "react";
-import AuthorPostsPage from "./_components/AuthorPostPage";
-import BreadCrumb from "@/components/custom/BreadCrumb";
-import { BookOpen, Home, Plus, Filter, Layout } from "lucide-react";
-import FilterSheet from "./_components/FilterSheet";
-import AuthorPostCardSkeleton from "./_components/AuthorPostCardSkeleton";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import SearchForm from "./_components/SearchPost";
 import { getPaginatedPosts } from "@/utils/post/get/action";
-import { DBPost } from "@/utils/types";
+import AuthorPostsPage from "./_components/AuthorPostPage";
 
-export default async function DashboardPostPage({
-  searchParams,
-}: PageProps<"/dashboard/posts">) {
-
-  const statusPromise = searchParams.then((sp) => sp.status);
-  const sortbyPromise = searchParams.then((sp) => sp.sortby);
-
-  return (
-    <div className="space-y-6">
-      <BreadCrumb
-        paths={[
-          { icon: <Home size={16} />, path: "/", title: "Home" },
-          { icon: <Layout size={16} />, path: "/dashboard", title: "Dashboard" },
-          {
-            icon: <BookOpen size={16} />,
-            path: "/dashboard/posts",
-            title: "Posts",
-          },
-        ]}
-      />
-
-      {/* Header */}
-      <div className="flex sm:flex-row flex-wrap sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500 border border-violet-500/30">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <h1 className="md:text-2xl font-semibold tracking-tight text-foreground">
-            Your Posts
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" title="Create New Post">
-            <Link href="/dashboard/posts/new" className="flex items-center gap-2">
-              <Plus size={16} /> New Post
-            </Link>
-          </Button>
-          <Suspense
-            fallback={
-              <Button className="bg-violet-600 text-white border border-violet-500/30 hover:cursor-pointer hover:bg-violet-700 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg">
-                <Filter size={16} /> Filter
-              </Button>
-            }
-          >
-            <FilterSheet
-              statusPromise={statusPromise}
-              sortbyPromise={sortbyPromise}
-            />
-          </Suspense>
-        </div>
-      </div>
-
-      <div>
-        <SearchForm />
-      </div>
-
-      <Suspense fallback={<AuthorPostCardSkeleton />}>
-        <AuthorPostPageDynamic statusPromise={statusPromise} sortbyPromise={sortbyPromise} />
-      </Suspense>
-    </div>
-  );
-}
-
-async function AuthorPostPageDynamic({ statusPromise, sortbyPromise }:
-  {
-    sortbyPromise: Promise<string | string[] | undefined>,
-    statusPromise: Promise<string | string[] | undefined>,
-  }) {
-  const [status, sortby] = await Promise.all([statusPromise, sortbyPromise]) as [DBPost['status'] | undefined, "latest" | "oldest" | undefined];
-  const initialPostsPromise = getPaginatedPosts({ status: status || "all", sortDirection: sortby });
+export default async function AuthorPostPage({searchParams}: { searchParams: Promise<{ sortby: string }> }) {
+  const sortDirection = await searchParams.then(params => params.sortby) as "latest" | "oldest" | undefined;
+  const { posts, nextKey } = await getPaginatedPosts({ status: "all", sortDirection: sortDirection || "latest" });
+  
   return (
     <>
       <AuthorPostsPage
-        statusPromise={statusPromise}
-        sortbyPromise={sortbyPromise}
-        initialPostsPromise={initialPostsPromise}
+        initialPosts={posts}
+        nextKey={nextKey}
+        status={"all"}
+        sortDirection={sortDirection}
       />
     </>
   )

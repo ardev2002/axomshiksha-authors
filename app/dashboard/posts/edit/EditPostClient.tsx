@@ -151,23 +151,6 @@ export default function EditPostClient({
 
   return (
     <>
-      <BreadCrumb
-        paths={[
-          { icon: <Home size={16} />, path: "/", title: "Home" },
-          {
-            icon: <Layout size={16} />,
-            path: "/dashboard",
-            title: "Dashboard",
-          },
-          {
-            icon: <BookOpen size={16} />,
-            path: "/dashboard/posts",
-            title: "Posts",
-          },
-          { icon: <Edit size={16} />, path: "#", title: "Edit Post" },
-        ]}
-      />
-
       <ValidationErrorCard
         errors={
           (editState as any).errorMsg ? [(editState as any).errorMsg] : []

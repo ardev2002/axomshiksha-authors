@@ -5,12 +5,11 @@ import { QueryCommand, QueryCommandInput, ScanCommand, ScanCommandInput } from "
 import { s3Client } from "@/lib/s3";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import matter from "gray-matter";
-import { getFreshUser } from "@/utils/helpers/getFreshUser";
 import { DBPost } from "@/utils/types";
 import { extractPostUrlParams } from "@/utils/helpers/slugify";
 import { getSignedUrlForDownload } from "@/utils/s3/action";
-import { cacheTag } from "next/cache";
 import { getSession } from "@/utils/helpers/getSession";
+import { cacheTag, revalidatePath, updateTag } from "next/cache";
 
 export async function getPost(slug: string) {
   const params: QueryCommandInput = {
@@ -75,7 +74,6 @@ export interface GetPaginatedPostsParams {
 export async function getPaginatedPosts(
   filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
-  
   if (filters.status === "all") {
     const { status, ...rest } = filters;
     return getAllPaginatedPosts(rest as any);
@@ -97,7 +95,7 @@ export async function getPaginatedPosts(
       ":authorId": authorId,
     },
     ScanIndexForward: filters?.sortDirection !== "latest",
-    Limit: filters?.limit || 10,
+    Limit: filters?.limit || 5,
   };
 
   if (filters?.lastKey) {
@@ -144,16 +142,12 @@ export async function getPaginatedPosts(
 export async function getPostsByFilter(formData: FormData) {
   const formDataObject = Object.fromEntries(formData);
   const status = formDataObject.status as
-    | string
+    | "published"
+    | "draft"
+    | "scheduled"
     | "";
   const sortby = formDataObject.sortby as "latest" | "oldest" | "";
-
-  const params = [];
-  if (status) params.push(`status=${status}`);
-  if (sortby) params.push(`sortby=${sortby}`);
-
-  const queryString = params.length > 0 ? `?${params.join("&")}` : "";
-  redirect(`/dashboard/posts${queryString}`, RedirectType.push);
+  redirect(`/dashboard/posts/${status}${sortby ? `?sortby=${sortby}` : ''}`, RedirectType.push);
 }
 
 export async function searchPosts(
@@ -219,7 +213,7 @@ export async function getAllPaginatedPosts(
   });
 
   // Apply limit
-  const limit = filters.limit || 10;
+  const limit = filters.limit || 5;
   const limitedPosts = allPosts.slice(0, limit);
 
   // For pagination with mixed statuses, we'll need to handle it differently

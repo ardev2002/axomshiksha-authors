@@ -13,7 +13,7 @@ import {
 import { Filter, RotateCcw } from "lucide-react";
 import { MotionButton } from "@/components/custom/Motion";
 import { getPostsByFilter } from "@/utils/post/get/action";
-import { useRef, useState, use } from "react";
+import { useRef, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -23,27 +23,13 @@ import {
 } from "@/components/ui/select";
 import { STATUSES } from "@/utils/CONSTANT";
 
-interface FilterSheetProps {
-  statusPromise: Promise<string | string[] | undefined>;
-  sortbyPromise: Promise<string | string[] | undefined>;
-}
-
-export default function FilterSheet({
-  statusPromise,
-  sortbyPromise,
-}: FilterSheetProps) {
-  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(
-    (use(statusPromise) as string) || "all"
-  );
-
-  const [selectedSortOrder, setSelectedSortOrder] = useState<string | undefined>(
-    (use(sortbyPromise) as string) || ""
-  );
-
+export default function FilterSheet() {
+  const [selectedStatus, setSelectedStatus] = useState<string | undefined>();
+  const [selectedSortOrder, setSelectedSortOrder] = useState<string | undefined>();
   const formRef = useRef<HTMLFormElement>(null);
 
   const resetFilters = () => {
-    setSelectedStatus("all");
+    setSelectedStatus("");
     setSelectedSortOrder("");
     formRef.current?.reset();
   };
@@ -91,8 +77,6 @@ export default function FilterSheet({
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Added "All" option */}
-                  <SelectItem value="all">All</SelectItem>
                   {STATUSES.map((status) => (
                     <SelectItem key={status} value={status}>
                       {status.charAt(0).toUpperCase() + status.slice(1)}

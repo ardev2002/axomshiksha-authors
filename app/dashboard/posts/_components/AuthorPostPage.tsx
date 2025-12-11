@@ -2,60 +2,49 @@
 import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, ChevronLeft, ChevronRight, Edit, ExternalLink } from "lucide-react";
-import { getPaginatedPosts, PaginatedPostsResponse } from "@/utils/post/get/action";
+import { getPaginatedPosts } from "@/utils/post/get/action";
 import Link from "next/link";
 import PostMetaDate from "@/components/custom/PostMetaDate";
 import DeletePost from "./DeletePost";
 import { DBPost } from "@/utils/types";
-import { use, useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MotionCard } from "@/components/custom/Motion";
 import { AnimatePresence, LayoutGroup } from "motion/react";
 import { inter } from "@/utils/fonts";
+import { useRouter } from "next/navigation";
 
 interface AuthorPostsPageProps {
-  statusPromise: Promise<string | string[] | undefined>;
-  sortbyPromise: Promise<string | string[] | undefined>;
-  initialPostsPromise: Promise<PaginatedPostsResponse>;
+  initialPosts: Record<string, any>[];
+  nextKey: Record<string, any> | null,
+  status: DBPost['status'] | "all"; // Add status prop
+  sortDirection: "latest" | "oldest" | undefined;
 }
 
 export default function AuthorPostsPage({
-  statusPromise,
-  sortbyPromise,
-  initialPostsPromise,
-}: AuthorPostsPageProps) {
-  const { posts: initialPosts, nextKey } = use(initialPostsPromise);
-  const [sortby, setSortby] = useState<"latest" | "oldest" | undefined>(use(sortbyPromise) as "latest" | "oldest" | undefined);
-  const [status, setStatus] = useState<DBPost['status'] | "all" | undefined>(use(statusPromise) as DBPost['status'] | "all" | undefined);
+  initialPosts,
+  status, // Default to "all" for backward compatibility
+  nextKey,
+  sortDirection,
+}: AuthorPostsPageProps) {;
   const [posts, setPosts] = useState<Record<string, any>[]>(initialPosts);
-  const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | null>(nextKey);
+  const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | null>(nextKey || null);
   const [prevPaginateKeys, setPrevPaginateKeys] = useState<(Record<string, any> | null)[]>([]);
+  const [sortBy, setSortBy] = useState<"latest" | "oldest" | undefined>(sortDirection);
+  const router = useRouter();
 
   useEffect(() => {
     setPosts(initialPosts);
-    setNextPaginateKey(nextKey);
-    setPrevPaginateKeys([]);
-  }, [initialPosts, nextKey]);
-
-  useEffect(() => {
-    const fetchPosts = async () => {
-      const { posts: newPosts } = await getPaginatedPosts({
-        lastKey: nextPaginateKey || undefined,
-        sortDirection: sortby,
-        status: status || "all"
-      });
-      setPosts(newPosts);
-    };
-    fetchPosts();
-  }, [status, sortby])
-
+  }, [initialPosts]);
+  
   const prevPostsHandler = async () => {
+    router.refresh();
     const prevKey = prevPaginateKeys[prevPaginateKeys.length - 1];
     const newPrevKeys = prevPaginateKeys.slice(0, -1);
 
     const { posts: newPosts } = await getPaginatedPosts({
       lastKey: prevKey || undefined,
-      sortDirection: sortby,
-      status: status || "all"
+      sortDirection: sortBy,
+      status: status // Use the passed status instead of hardcoded "all"
     });
 
     setPosts(newPosts);
@@ -64,11 +53,12 @@ export default function AuthorPostsPage({
   };
 
   const nextPostsHandler = async () => {
+    router.refresh();
     const { posts: newPosts, nextKey: newNextKey } = await getPaginatedPosts({
       lastKey: nextPaginateKey || undefined,
-      sortDirection: sortby,
+      sortDirection: sortBy,
       limit: 10,
-      status: status || "all"
+      status: status // Use the passed status instead of hardcoded "all"
     });
 
     setPosts(newPosts);

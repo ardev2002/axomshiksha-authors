@@ -36,12 +36,12 @@ export default function DashboardContent({ stats, publishedPosts, draftPosts, sc
     >
       <Suspense fallback={<RecentlyPublishedPostsSkeleton />}>
         <RecentPostsCard
-          title="Recently Published"
+          title="Published Posts"
           icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
           badgeVariant="published"
           totalCount={statsData?.totalPublishedPosts}
           posts={recentPublished}
-          viewAllHref="/dashboard/posts?status=published"
+          viewAllHref="/dashboard/posts/published"
           isPublished={true}
         />
       </Suspense>
@@ -53,7 +53,7 @@ export default function DashboardContent({ stats, publishedPosts, draftPosts, sc
           badgeVariant="draft"
           totalCount={statsData?.totalDraftPosts}
           posts={recentDrafts}
-          viewAllHref="/dashboard/posts?status=draft"
+          viewAllHref="/dashboard/posts/draft"
         />
       </Suspense>
       
@@ -64,7 +64,7 @@ export default function DashboardContent({ stats, publishedPosts, draftPosts, sc
           badgeVariant="scheduled"
           totalCount={statsData?.totalScheduledPosts}
           posts={recentScheduled}
-          viewAllHref="/dashboard/posts?status=scheduled"
+          viewAllHref="/dashboard/posts/scheduled"
           onPostStatusChange={({id, title, date, slug}) => onPostPublished({id, title, date, slug})}
         />
       </Suspense>

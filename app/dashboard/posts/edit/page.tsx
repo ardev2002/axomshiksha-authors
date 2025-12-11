@@ -2,6 +2,7 @@ import EditPostClient from "@/app/dashboard/posts/edit/EditPostClient";
 import type { Section } from "@/app/dashboard/posts/_components/sectionTypes";
 import { convertMDXToSections } from "@/utils/helpers/mdx-convert";
 import { getPost } from "@/utils/post/get/action";
+import BreadcrumbSetter from "../[status]/BreadcrumbSetter";
 
 export default async function EditPostPage({
   searchParams,
@@ -22,5 +23,10 @@ export default async function EditPostPage({
 
   const sections: Section[] = convertMDXToSections(content || "");
 
-  return <EditPostClient post={post} sections={sections} />;
+  return (
+    <>
+      <BreadcrumbSetter status={"Edit Post"} />
+      <EditPostClient post={post} sections={sections} />
+    </>
+  );
 }

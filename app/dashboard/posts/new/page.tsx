@@ -49,7 +49,9 @@ import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
 import { SUBJECTS_BY_LEVEL, LEVELS } from "@/utils/CONSTANT";
 import SchedulePost from "./SchedulePost";
-export default function AddPostPage() {
+import BreadcrumbSetter from "../[status]/BreadcrumbSetter";
+
+export default function NewPostPage() {
   const [topic, setTopic] = useState("");
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState("");
@@ -290,23 +292,8 @@ export default function AddPostPage() {
   }, [publishState, draftState, scheduleState]);
 
   return (
-    <>
-      <BreadCrumb
-        paths={[
-          { icon: <Home size={16} />, path: "/", title: "Home" },
-          { icon: <Layout size={16} />, path: "/dashboard", title: "Dashboard" },
-          {
-            icon: <BookOpen size={16} />,
-            path: "/dashboard/posts",
-            title: "Posts",
-          },
-          {
-            icon: <Plus size={16} />,
-            path: "/dashboard/posts/new",
-            title: "New Post",
-          },
-        ]}
-      />
+    <div className="mx-auto space-y-8">
+      <BreadcrumbSetter status={"New Post"} />
 
       <ValidationErrorCard errors={displayErrors} />      <DraftPostDialog
         draftPost={draftPost}
@@ -511,6 +498,6 @@ export default function AddPostPage() {
         <input type="hidden" name="chapterNo" value={chapterNo} />
         <input type="hidden" name="readingTime" value={readingTime} />
       </form>
-    </>
+    </div>
   );
 }
