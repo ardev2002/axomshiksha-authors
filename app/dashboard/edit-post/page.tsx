@@ -1,12 +1,13 @@
-import EditPostClient from "@/app/dashboard/posts/edit/EditPostClient";
+import EditPostClient from "@/app/dashboard/edit-post/EditPostClient";
 import type { Section } from "@/app/dashboard/posts/_components/sectionTypes";
 import { convertMDXToSections } from "@/utils/helpers/mdx-convert";
 import { getPost } from "@/utils/post/get/action";
-import BreadcrumbSetter from "../[status]/BreadcrumbSetter";
+import BreadCrumb from "@/components/custom/BreadCrumb";
+import { HomeIcon, LayoutIcon, BookOpen } from "lucide-react";
 
 export default async function EditPostPage({
   searchParams,
-}: PageProps<"/dashboard/posts/edit">) {
+}: PageProps<"/dashboard/edit-post">) {
   const postSlug = (await searchParams).slug as string;
 
   if (!postSlug) {
@@ -25,7 +26,14 @@ export default async function EditPostPage({
 
   return (
     <>
-      <BreadcrumbSetter status={"Edit Post"} />
+      {/* Add direct breadcrumb implementation */}
+      <BreadCrumb 
+        paths={[
+          { icon: <HomeIcon size={16} />, path: "/", title: "Home" },
+          { icon: <LayoutIcon size={16} />, path: "/dashboard", title: "Dashboard" },
+          { icon: null, path: "", title: "Edit Post" }
+        ]} 
+      />
       <EditPostClient post={post} sections={sections} />
     </>
   );

@@ -2,11 +2,9 @@
 import { motion } from "motion/react";
 import { AuthorPostStats } from "@/utils/helpers/getAuthorPostStats";
 import { RecentPost } from "@/utils/helpers/getRecentPosts";
-import { Suspense, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { RecentPostsCard } from "./RecentPostsCard";
 import { Clock, FileClock, Sparkles } from "lucide-react";
-import { DraftedPostsSkeleton, RecentlyPublishedPostsSkeleton, RecentlyScheduledPostsSkeleton } from "../page";
-
 // Create a client component for the dynamic content
 interface DashboardContentProps {
   stats: AuthorPostStats | null;
@@ -20,9 +18,9 @@ export default function DashboardContent({ stats, publishedPosts, draftPosts, sc
   const [recentDrafts, setRecentDrafts] = useState<RecentPost[]>(draftPosts);
   const [recentScheduled, setRecentScheduled] = useState<RecentPost[]>(scheduledPosts);
   const [statsData, setStatsData] = useState<AuthorPostStats | null>(stats);
-  
+
   // Handler for when a scheduled post is published
-  const onPostPublished = useCallback(({ id, title, date, slug }:RecentPost) => {
+  const onPostPublished = useCallback(({ id, title, date, slug }: RecentPost) => {
     setRecentPublished((prev) => [{ id, title, date, slug }, ...prev]);
     setRecentScheduled((prev) => prev.filter((post) => post.id !== id));
   }, []);
@@ -34,40 +32,34 @@ export default function DashboardContent({ stats, publishedPosts, draftPosts, sc
       transition={{ delay: 0.25 }}
       className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-hidden"
     >
-      <Suspense fallback={<RecentlyPublishedPostsSkeleton />}>
-        <RecentPostsCard
-          title="Published Posts"
-          icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
-          badgeVariant="published"
-          totalCount={statsData?.totalPublishedPosts}
-          posts={recentPublished}
-          viewAllHref="/dashboard/posts/published"
-          isPublished={true}
-        />
-      </Suspense>
+      <RecentPostsCard
+        title="Published Posts"
+        icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
+        badgeVariant="published"
+        totalCount={statsData?.totalPublishedPosts}
+        posts={recentPublished}
+        viewAllHref="/dashboard/posts/published"
+        isPublished={true}
+      />
 
-      <Suspense fallback={<DraftedPostsSkeleton />}>
-        <RecentPostsCard
-          title="Drafted Posts"
-          icon={<FileClock className="w-4 h-4 text-amber-400" />}
-          badgeVariant="draft"
-          totalCount={statsData?.totalDraftPosts}
-          posts={recentDrafts}
-          viewAllHref="/dashboard/posts/draft"
-        />
-      </Suspense>
-      
-      <Suspense fallback={<RecentlyScheduledPostsSkeleton />}>
-        <RecentPostsCard
-          title="Scheduled Posts"
-          icon={<Clock className="w-4 h-4 text-purple-400" />}
-          badgeVariant="scheduled"
-          totalCount={statsData?.totalScheduledPosts}
-          posts={recentScheduled}
-          viewAllHref="/dashboard/posts/scheduled"
-          onPostStatusChange={({id, title, date, slug}) => onPostPublished({id, title, date, slug})}
-        />
-      </Suspense>
+      <RecentPostsCard
+        title="Drafted Posts"
+        icon={<FileClock className="w-4 h-4 text-amber-400" />}
+        badgeVariant="draft"
+        totalCount={statsData?.totalDraftPosts}
+        posts={recentDrafts}
+        viewAllHref="/dashboard/posts/draft"
+      />
+
+      <RecentPostsCard
+        title="Scheduled Posts"
+        icon={<Clock className="w-4 h-4 text-purple-400" />}
+        badgeVariant="scheduled"
+        totalCount={statsData?.totalScheduledPosts}
+        posts={recentScheduled}
+        viewAllHref="/dashboard/posts/scheduled"
+        onPostStatusChange={({ id, title, date, slug }) => onPostPublished({ id, title, date, slug })}
+      />
     </motion.div>
   );
 }

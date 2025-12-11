@@ -179,7 +179,7 @@ function PostCard({
 
                 {/* Edit Button */}
                 <Link
-                  href={`/dashboard/posts/edit?slug=${post.slug}`}
+                  href={`/dashboard/edit-post?slug=${post.slug}`}
                   className="text-sky-400 hover:bg-sky-400/10 rounded-md p-2 transition-colors duration-200"
                   title="Edit Post"
                 >

@@ -9,22 +9,11 @@ import {
 } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import {
-  Plus,
-  FileText,
-  Layers3,
-  CheckCircle,
-  BookOpen,
-  Home,
-  Rocket,
-  Layout,
-  Clock,
-} from "lucide-react";
-import { publishPost } from "@/utils/post/publish/action";
-import { saveDraft } from "@/utils/post/draft/action";
-import { schedulePost } from "@/utils/post/schedule/action";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, Layers3, Rocket, Clock, HomeIcon, LayoutIcon, BookOpen, CheckCircle } from "lucide-react";
+import { LEVELS, SUBJECTS_BY_LEVEL } from "@/utils/CONSTANT";
+import { Spinner } from "@/components/ui/spinner";
+import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
 import {
   Select,
   SelectContent,
@@ -36,20 +25,20 @@ import { toast } from "sonner";
 import { MotionCard } from "@/components/custom/Motion";
 import EnhancedInput from "@/components/custom/EnhancedInput";
 import EnhancedTextArea from "@/components/custom/EnhancedTextArea";
-import { Spinner } from "@/components/ui/spinner";
 import ValidationErrorCard from "@/components/custom/ValidationErrorCard";
 import FileUpload from "@/components/custom/FileUpload";
 import BreadCrumb from "@/components/custom/BreadCrumb";
 import { SavedPostResult } from "@/utils/helpers/saveToDB";
 import { cleanupOrphanedImages } from "@/utils/s3/cleanup";
 import DraftPostDialog from "./DraftPostDialog";
-import SectionsEditor from "../_components/SectionsEditor";
-import { CodeBlock, Section } from "../_components/sectionTypes";
+import SectionsEditor from "../posts/_components/SectionsEditor";
+import { CodeBlock, Section } from "../posts/_components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
-import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
-import { SUBJECTS_BY_LEVEL, LEVELS } from "@/utils/CONSTANT";
 import SchedulePost from "./SchedulePost";
-import BreadcrumbSetter from "../[status]/BreadcrumbSetter";
+import { Separator } from "@/components/ui/separator";
+import { publishPost } from "@/utils/post/publish/action";
+import { saveDraft } from "@/utils/post/draft/action";
+import { schedulePost } from "@/utils/post/schedule/action";
 
 export default function NewPostPage() {
   const [topic, setTopic] = useState("");
@@ -292,10 +281,17 @@ export default function NewPostPage() {
   }, [publishState, draftState, scheduleState]);
 
   return (
-    <div className="mx-auto space-y-8">
-      <BreadcrumbSetter status={"New Post"} />
-
-      <ValidationErrorCard errors={displayErrors} />      <DraftPostDialog
+    <>
+      {/* Add direct breadcrumb implementation */}
+      <BreadCrumb 
+        paths={[
+          { icon: <HomeIcon size={16} />, path: "/", title: "Home" },
+          { icon: <LayoutIcon size={16} />, path: "/dashboard", title: "Dashboard" },
+          { icon: null, path: "", title: "New Post" }
+        ]} 
+      />
+      <ValidationErrorCard errors={displayErrors} />      
+      <DraftPostDialog
         draftPost={draftPost}
         setDraftPost={setDraftPost}
         draftPostConfirmation={draftPostConfirmation}
@@ -312,7 +308,7 @@ export default function NewPostPage() {
       />
 
       <form className="space-y-8">
-        <div className="flex flex-wrap gap-3 items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500 border border-violet-500/30">
               <FileText className="w-5 h-5" />
@@ -498,6 +494,6 @@ export default function NewPostPage() {
         <input type="hidden" name="chapterNo" value={chapterNo} />
         <input type="hidden" name="readingTime" value={readingTime} />
       </form>
-    </div>
+    </>
   );
 }

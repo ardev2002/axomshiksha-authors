@@ -197,7 +197,7 @@ export function RecentPostsCard({
                   href={
                     isPublished
                       ? `https://axomshiksha.com/${post.slug}`
-                      : `/dashboard/posts/edit?slug=${post.slug}`
+                      : `/dashboard/edit-post?slug=${post.slug}`
                   }
                   {...(isPublished ? { target: "_blank" } : {})}
                   className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground transition"

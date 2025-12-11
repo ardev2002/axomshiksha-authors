@@ -29,8 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"; import { editPost } from "@/utils/post/edit/action";
-import SectionsEditor from "../_components/SectionsEditor";
-import type { Section } from "../_components/sectionTypes";
+import SectionsEditor from "../posts/_components/SectionsEditor";
+import type { Section } from "../posts/_components/sectionTypes";
 import { removeWhiteSpaces } from "@/utils/helpers/removeWhiteSpaces";
 import { convertSectionsToMDXWithMeta } from "@/utils/helpers/mdx-convert";
 import { SUBJECTS_BY_LEVEL, LEVELS } from "@/utils/CONSTANT";

@@ -11,6 +11,7 @@ import {
   BarChart3,
   Layout,
   Clock,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { getAuthorPostStats } from "@/utils/helpers/getAuthorPostStats";
@@ -69,6 +70,12 @@ export function BreadCrumbAndHeader() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link href="/dashboard/add-new-post">
+            <Button variant="outline" className="flex items-center gap-2 hover:cursor-pointer">
+              <Plus size={16} />
+              New Post
+            </Button>
+          </Link>
           <Link href="/dashboard/posts">
             <Button className="flex items-center gap-2 hover:cursor-pointer border-white/20 text-white bg-violet-600 hover:bg-violet-700 transition">
               <FileText size={16} />

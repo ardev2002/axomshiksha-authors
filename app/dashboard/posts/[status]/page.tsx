@@ -1,7 +1,6 @@
 import { getPaginatedPosts } from "@/utils/post/get/action";
 import { DBPost } from "@/utils/types";
 import AuthorPostsPage from "../_components/AuthorPostPage";
-import BreadcrumbSetter from "./BreadcrumbSetter";
 import { Suspense } from "react";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -21,7 +20,6 @@ async function StatusPageChild({ params, sortByPromise }: { params: Promise<{ st
     
     return (
         <>
-            <BreadcrumbSetter status={status} />
             <AuthorPostsPage
                 initialPosts={posts}
                 nextKey={nextKey}
