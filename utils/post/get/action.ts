@@ -10,6 +10,7 @@ import { DBPost } from "@/utils/types";
 import { extractPostUrlParams } from "@/utils/helpers/slugify";
 import { getSignedUrlForDownload } from "@/utils/s3/action";
 import { cacheTag } from "next/cache";
+import { getSession } from "@/utils/helpers/getSession";
 
 export async function getPost(slug: string) {
   const params: QueryCommandInput = {
@@ -74,16 +75,12 @@ export interface GetPaginatedPostsParams {
 export async function getPaginatedPosts(
   filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
-  "use cache: private"
-  cacheTag("posts");
-  
   if (filters.status === "all") {
-    // Omit the status property when passing to getAllPaginatedPosts
     const { status, ...rest } = filters;
     return getAllPaginatedPosts(rest as any);
   }
 
-  const authorId = (await getFreshUser())?.email?.split("@")[0];
+  const authorId = (await getSession())?.user.email?.split("@")[0];
 
   const params: QueryCommandInput = {
     TableName: process.env.AWS_POST_TABLE!,
@@ -193,7 +190,6 @@ export async function searchPosts(
 export async function getAllPaginatedPosts(
   filters: Omit<GetPaginatedPostsParams, 'status'> & { status?: "all" }
 ): Promise<PaginatedPostsResponse> {
-  const authorId = (await getFreshUser())?.email?.split("@")[0];
 
   // Run parallel queries for all three statuses
   const [publishedResult, draftResult, scheduledResult] = await Promise.all([

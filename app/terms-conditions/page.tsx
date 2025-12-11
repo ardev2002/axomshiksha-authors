@@ -1,10 +1,9 @@
-"use client";
-
+"use cache"
 import BreadCrumb from "@/components/custom/BreadCrumb";
 import { Home, FileText, ShieldCheck, User, FileEdit, Ban, AlertTriangle, Edit3 } from "lucide-react";
-import { motion } from "motion/react";
+import * as motion from "motion/react-client";
 
-export default function TermsConditionsPage() {
+export default async function TermsConditionsPage() {
   const terms = [
     {
       icon: <ShieldCheck className="w-5 h-5" />,

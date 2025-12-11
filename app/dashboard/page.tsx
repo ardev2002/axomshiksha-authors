@@ -37,9 +37,9 @@ export default function AuthorDashboardPage() {
 
 async function DashboardContentWrapper() {
   const statsResponse = await getAuthorPostStats();
-  const publishedResponse = await getRecentPublishedPosts(3);
-  const draftResponse = await getRecentDraftPosts(3);
-  const scheduledResponse = await getRecentScheduledPosts(3);
+  const publishedResponse = await getRecentPublishedPosts();
+  const draftResponse = await getRecentDraftPosts();
+  const scheduledResponse = await getRecentScheduledPosts();
 
   return <DashboardContent stats={statsResponse} publishedPosts={publishedResponse} draftPosts={draftResponse} scheduledPosts={scheduledResponse} />
 }

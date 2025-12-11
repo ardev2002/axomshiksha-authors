@@ -1,8 +1,9 @@
+"use cache"
 import BreadCrumb from "@/components/custom/BreadCrumb";
 import { Home, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import * as motion from "motion/react-client";
-export default function ContactPage() {
+export default async function ContactPage() {
   const contactMethods = [
     {
       icon: <Mail className="w-5 h-5" />,

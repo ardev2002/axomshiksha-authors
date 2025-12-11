@@ -5,7 +5,7 @@ import { Home, HelpCircle, FileText, Settings, Shield, Mail } from "lucide-react
 import { motion } from "motion/react";
 import { useState } from "react";
 
-export default function FAQPage() {
+export default async function FAQPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggleAccordion = (index: number) => {

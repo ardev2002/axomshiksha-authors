@@ -1,10 +1,9 @@
-"use client";
-
+"use cache"
 import BreadCrumb from "@/components/custom/BreadCrumb";
 import { Home, Shield, Eye, Lock, Share2, Database, UserCheck, Cookie, Users, Mail } from "lucide-react";
-import { motion } from "motion/react";
+import * as motion from "motion/react-client";
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
   const privacySections = [
     {
       icon: <Eye className="w-5 h-5" />,
