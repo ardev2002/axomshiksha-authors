@@ -4,8 +4,6 @@ import Header from "@/components/custom/Header";
 import { ThemeProvider } from "@/components/custom/ThemeProvider";
 import { Toaster } from "@/components/custom/Toaster";
 import Footer from "@/components/custom/Footer";
-import UserProvider from "@/components/custom/UserProvider";
-import { getSession } from "@/utils/helpers/getSession";
 import { montserrat } from "@/utils/fonts";
 
 export const metadata: Metadata = {
@@ -19,18 +17,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const sessionPromise = getSession();
   return (
     <html lang="en" className={montserrat.className} suppressHydrationWarning>
       <body className={`antialiased`}>
         <ThemeProvider>
-          <UserProvider sessionPromise={sessionPromise}>
-            <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-              <Header sessionPromise={sessionPromise} />
-              {children}
-              <Footer />
-            </main>
-          </UserProvider>
+          <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+            <Header />
+            {children}
+            <Footer />
+          </main>
           <Toaster position="bottom-center" />
         </ThemeProvider>
       </body>

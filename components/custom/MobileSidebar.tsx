@@ -24,13 +24,12 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import ThemeSwitchButton from "./ThemeSwitchButton";
-import { UserContext } from "./UserProvider";
 import { signIn, signOut } from "@/utils/auth/action";
+import { Session } from "@supabase/supabase-js";
 
-export default function MobileSidebar() {
-  const [open, setOpen] = useState(false);
-  const sessionPromise = useContext(UserContext);
+export default function MobileSidebar({ sessionPromise }: { sessionPromise: Promise<Session | null> }) {
   const session = use(sessionPromise);
+  const [open, setOpen] = useState(false);
   return (
     <>
       {/* Mobile Menu */}

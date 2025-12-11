@@ -13,7 +13,8 @@ export interface RecentPost {
 
 export const getRecentPublishedPosts = cache(
   async (limit: number = 5): Promise<RecentPost[]> => {
-
+    "use cache: private"
+    cacheTag("author-post-stats");
     try {
       const { posts } = await getPaginatedPosts({
         status: "published",
@@ -37,6 +38,8 @@ export const getRecentPublishedPosts = cache(
 
 export const getRecentDraftPosts = cache(
   async (limit: number = 5): Promise<RecentPost[]> => {
+    "use cache: private"
+    cacheTag("author-post-stats");
     try {
       const { posts } = await getPaginatedPosts({
         status: "draft",
@@ -60,6 +63,8 @@ export const getRecentDraftPosts = cache(
 
 export const getRecentScheduledPosts = cache(
   async (limit: number = 5): Promise<RecentPost[]> => {
+    "use cache: private"
+    cacheTag("author-post-stats");
     try {
       const { posts } = await getPaginatedPosts({
         status: "scheduled",

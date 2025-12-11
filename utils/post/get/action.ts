@@ -75,6 +75,7 @@ export interface GetPaginatedPostsParams {
 export async function getPaginatedPosts(
   filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
+  
   if (filters.status === "all") {
     const { status, ...rest } = filters;
     return getAllPaginatedPosts(rest as any);

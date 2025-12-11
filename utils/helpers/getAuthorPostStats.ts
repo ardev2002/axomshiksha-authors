@@ -4,6 +4,8 @@ import { db } from "@/lib/dynamoClient";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { Select } from "@aws-sdk/client-dynamodb";
 import { getFreshUser } from "./getFreshUser";
+import { getSession } from "./getSession";
+import { cacheTag } from "next/cache";
 
 export interface AuthorPostStats {
   totalPosts: number;
@@ -16,7 +18,7 @@ export interface AuthorPostStats {
 // Helper function to get count for a specific status
 async function getCountByStatus(status: string): Promise<number> {
   try {
-    const authorId = (await getFreshUser())?.email?.split("@")[0];
+    const authorId = (await getSession())?.user?.email?.split("@")[0];
     if (!authorId) return 0;
 
     // Use DynamoDB Query to count items with specific status
@@ -46,6 +48,8 @@ async function getCountByStatus(status: string): Promise<number> {
 
 export const getAuthorPostStats = cache(
   async (): Promise<AuthorPostStats | null> => {
+    "use cache: private"
+    cacheTag("author-post-stats");
     try {
       // Fetch counts for each status efficiently using COUNT queries
       const [totalPublished, totalDraft, totalScheduled] = await Promise.all([

@@ -7,7 +7,7 @@ interface RecentPostsCardSkeletonProps {
 
 export function RecentPostsCardSkeleton({ title }: RecentPostsCardSkeletonProps) {
   return (
-    <Card className="bg-background/70 border border-white/10 shadow-sm">
+    <Card className="bg-background/70 border border-white/10 shadow-sm" title={title}>
       <CardHeader className="flex flex-row items-center justify-between border-b border-white/10 pb-3">
         <div className="flex items-center gap-2">
           <Skeleton className="w-4 h-4 rounded-full" />

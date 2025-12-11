@@ -1,20 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import MobileSidebar from "./MobileSidebar";
-import { LogIn, LogOut, Menu, HelpCircle } from "lucide-react";
+import { LogIn, LogOut, Menu } from "lucide-react";
 import { Suspense } from "react";
 import ThemeSwitchButton from "./ThemeSwitchButton";
 import { Session } from "@supabase/supabase-js";
 import { signIn, signOut } from "@/utils/auth/action";
 import { Skeleton } from "../ui/skeleton";
+import { getSession } from "@/utils/helpers/getSession";
 
-export default async function Header({
-  sessionPromise,
-}: {
-  sessionPromise: Promise<Session | null>;
-}) {
- 
-
+export default async function Header() {
+ const sessionPromise = getSession();
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg supports-backdrop-filter:bg-background/60 transition-colors duration-300">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
@@ -64,7 +60,7 @@ export default async function Header({
 
         {/* Mobile sidebar for mobile devices */}
         <Suspense fallback={<MobileSidebarSkeleton />}>
-          <MobileSidebar />
+          <MobileSidebar sessionPromise={sessionPromise} />
         </Suspense>
       </div>
     </nav>

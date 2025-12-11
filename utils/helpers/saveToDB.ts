@@ -8,6 +8,7 @@ import { s3Client } from "@/lib/s3";
 import { urlToContentKey } from "./generatePostUrl";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { db } from "@/lib/dynamoClient";
+import { revalidateTag } from "next/cache";
 
 export interface SavedPostResult {
   successMsg?: string;
@@ -90,7 +91,7 @@ export async function saveToDB(
       item.publishTime = currentTimestamp;
     }
 
-    if(status === "scheduled"){
+    if (status === "scheduled") {
       item.publishTime = rawPost.scheduledAt;
     }
 
@@ -126,6 +127,7 @@ export async function saveToDB(
       body: JSON.stringify({ secret: process.env.REVALIDATE_SECRET! }),
     })
 
+    revalidateTag('author-post-stats', { expire: 3600 })
     return { statusText: "ok" as const, successMsg };
   } catch (error) {
     if (error instanceof ZodError) {
