@@ -19,14 +19,11 @@ async function StatusPageChild({ params, sortByPromise }: { params: Promise<{ st
     const sortDirection = await sortByPromise
     const { posts, nextKey } = await getPaginatedPosts({ status: status as DBPost["status"], sortDirection: sortDirection || "latest" });
     
-    const sortedPosts = posts.sort((a, b) => new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime());
-    console.log(sortedPosts)
     return (
         <>
             <BreadcrumbSetter status={status} />
-
             <AuthorPostsPage
-                initialPosts={sortedPosts}
+                initialPosts={posts}
                 nextKey={nextKey}
                 status={status}
                 sortDirection={sortDirection}

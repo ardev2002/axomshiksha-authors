@@ -35,7 +35,7 @@ export default function AuthorPostsPage({
   useEffect(() => {
     setPosts(initialPosts);
   }, [initialPosts]);
-  
+
   const prevPostsHandler = async () => {
     router.refresh();
     const prevKey = prevPaginateKeys[prevPaginateKeys.length - 1];

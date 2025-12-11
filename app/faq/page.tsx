@@ -5,7 +5,7 @@ import { Home, HelpCircle, FileText, Settings, Shield, Mail } from "lucide-react
 import { motion } from "motion/react";
 import { useState } from "react";
 
-export default async function FAQPage() {
+export default function FAQPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggleAccordion = (index: number) => {
@@ -99,15 +99,15 @@ export default async function FAQPage() {
         
         <div className="mx-auto my-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.2 }}
             className="bg-card border border-accent rounded-xl p-6 md:p-8 shadow-sm"
           >
             <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              transition={{ duration: 0.2, delay: 0.02}}
               className="text-3xl md:text-4xl font-bold mb-6 text-foreground"
             >
               Frequently Asked Questions
@@ -116,7 +116,7 @@ export default async function FAQPage() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
               className="text-muted-foreground mb-8"
             >
               Find answers to common questions about using our platform. If you can't find what you're looking for, 
@@ -127,9 +127,9 @@ export default async function FAQPage() {
               {faqData.map((category, categoryIndex) => (
                 <motion.div
                   key={category.category}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 + categoryIndex * 0.1 }}
+                  transition={{ duration: 0.2, delay: 0.1 + categoryIndex * 0.02}}
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 rounded-md bg-violet-500/10 text-violet-500">
@@ -148,7 +148,7 @@ export default async function FAQPage() {
                           key={index}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: 0.4 + categoryIndex * 0.1 + index * 0.05 }}
+                          transition={{ duration: 0.2, delay: 0.15 + categoryIndex * 0.02+ index * 0.03 }}
                           className="border border-accent rounded-lg overflow-hidden"
                         >
                           <button
@@ -157,7 +157,7 @@ export default async function FAQPage() {
                           >
                             <span className="font-medium text-foreground">{faq.question}</span>
                             <svg
-                              className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${
+                              className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
                                 openIndex === globalIndex ? 'rotate-180' : ''
                               }`}
                               fill="none"
@@ -179,7 +179,7 @@ export default async function FAQPage() {
                               height: openIndex === globalIndex ? 'auto' : 0,
                               opacity: openIndex === globalIndex ? 1 : 0,
                             }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
                             <div className="p-4 bg-background/30 border-t border-accent">
@@ -195,9 +195,9 @@ export default async function FAQPage() {
             </div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.0 }}
+              transition={{ duration: 0.2, delay: 0.3 }}
               className="mt-12 pt-8 border-t border-accent"
             >
               <div className="flex items-start gap-3">
