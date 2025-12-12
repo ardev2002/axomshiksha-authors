@@ -15,15 +15,14 @@ export default async function Page({ params, searchParams }: { params: Promise<{
 
 async function StatusPageChild({ params, sortByPromise }: { params: Promise<{ status: DBPost['status'] }>, sortByPromise: Promise<"latest" | "oldest" | undefined> }) {
     const { status } = await params
-    const sortDirection = await sortByPromise
-    const { posts, nextKey } = await getPaginatedPosts({ status: status as DBPost["status"], sortDirection: sortDirection || "latest" });
+    const sortDirection = (await sortByPromise) || "latest"
+    const { posts, nextKey } = await getPaginatedPosts({ status: status as DBPost["status"], sortDirection });
     
     return (
         <>
             <AuthorPostsPage
                 initialPosts={posts}
-                nextKey={nextKey}
-                status={status}
+                initialNextKey={nextKey}
                 sortDirection={sortDirection}
             />
         </>
