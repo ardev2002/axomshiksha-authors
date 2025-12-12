@@ -11,60 +11,96 @@ import { useEffect, useState } from "react";
 import { MotionCard } from "@/components/custom/Motion";
 import { AnimatePresence, LayoutGroup } from "motion/react";
 import { inter } from "@/utils/fonts";
-import { useRouter } from "next/navigation";
 
 interface AuthorPostsPageProps {
   initialPosts: Record<string, any>[];
   nextKey: Record<string, any> | undefined,
-  status: DBPost['status'] | "all"; // Add status prop
+  status: DBPost['status'] | "all"; 
   sortDirection: "latest" | "oldest" | undefined;
 }
 
 export default function AuthorPostsPage({
   initialPosts,
-  status, // Default to "all" for backward compatibility
+  status,
   nextKey,
   sortDirection,
-}: AuthorPostsPageProps) {;
+}: AuthorPostsPageProps) {
   const [posts, setPosts] = useState<Record<string, any>[]>(initialPosts);
   const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | undefined>(nextKey || undefined);
+  
+  // 1. New State: Stores the 'ExclusiveStartKey' that fetched the current page.
+  // For the initial page (Page 1), this key is always undefined.
+  const [currentPageKey, setCurrentPageKey] = useState<Record<string, any> | undefined>(undefined);
+  
+  // 2. State for Navigation History
   const [prevPaginateKeys, setPrevPaginateKeys] = useState<(Record<string, any> | undefined)[]>([]);
   const [sortBy, setSortBy] = useState<"latest" | "oldest" | undefined>(sortDirection);
-  const router = useRouter();
 
+  // 3. Reset state when initial props change (e.g., sortDirection changes)
   useEffect(() => {
     setPosts(initialPosts);
-  }, [initialPosts]);
+    setNextPaginateKey(nextKey);
+    setPrevPaginateKeys([]);
+    setSortBy(sortDirection);
+    // Reset the current page's start key to undefined for the first page
+    setCurrentPageKey(undefined); 
+  }, [initialPosts, nextKey, sortDirection, status]);
 
   const prevPostsHandler = async () => {
-    router.refresh();
-    const prevKey = prevPaginateKeys[prevPaginateKeys.length - 1];
-    const newPrevKeys = prevPaginateKeys.slice(0, -1);
+    // We only need to check if there are keys to go back to
+    if (prevPaginateKeys.length === 0) return;
 
-    const { posts: newPosts } = await getPaginatedPosts({
-      lastKey: prevKey || undefined,
+    // The key to go back to the previous page (N-1) is the last one in the history array.
+    const prevKey = prevPaginateKeys[prevPaginateKeys.length - 1]; 
+    const remainingKeys = prevPaginateKeys.slice(0, -1);
+
+    // Fetch posts for the previous page (N-1) using its start key (prevKey)
+    const { posts: newPosts, nextKey: newNextKey } = await getPaginatedPosts({
+      lastKey: prevKey,
       sortDirection: sortBy,
-      status: status // Use the passed status instead of hardcoded "all"
+      limit: 5,
+      status
     });
 
     setPosts(newPosts);
-    setNextPaginateKey(prevKey);
-    setPrevPaginateKeys(newPrevKeys);
+    
+    // The key to fetch the NEXT page (N) is now the OLD `currentPageKey`.
+    // We set the `nextPaginateKey` to the key that we just left (currentPageKey)
+    setNextPaginateKey(currentPageKey);
+    
+    // The key that fetched the NEW posts (N-1) is now the current key.
+    setCurrentPageKey(prevKey); 
+    
+    // Update navigation history
+    setPrevPaginateKeys(remainingKeys);
   };
 
   const nextPostsHandler = async () => {
-    router.refresh();
+    // 1. Store the start key of the CURRENT page (N) into the history array
+    setPrevPaginateKeys([...prevPaginateKeys, currentPageKey]); 
+    
+    // The key to fetch the next page (N+1) is in `nextPaginateKey`.
+    const keyForNextPage = nextPaginateKey;
+    
+    // We must check for existence before using it in the fetch call, 
+    // although the disabled prop on the button should prevent this.
+    if (!keyForNextPage) return; 
+
     const { posts: newPosts, nextKey: newNextKey } = await getPaginatedPosts({
-      lastKey: nextPaginateKey || undefined,
+      lastKey: keyForNextPage,
       sortDirection: sortBy,
-      limit: 10,
-      status: status // Use the passed status instead of hardcoded "all"
+      limit: 5,
+      status
     });
 
+    console.log(newPosts);
     setPosts(newPosts);
     setNextPaginateKey(newNextKey);
-    setPrevPaginateKeys([...prevPaginateKeys, nextPaginateKey]);
+    
+    // 2. Update the key for the NEW current page (N+1)
+    setCurrentPageKey(keyForNextPage); 
   };
+
 
   if (!posts.length)
     return (
@@ -81,34 +117,33 @@ export default function AuthorPostsPage({
         ))}
       </div>
 
-      {(nextPaginateKey) && (
-        <div className="flex justify-center items-center gap-4 pt-6 border-t border-accent">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!prevPaginateKeys.length}
-            onClick={prevPostsHandler}
-            className="text-violet-500 hover:bg-violet-500/10 flex items-center gap-1"
-          >
-            <ChevronLeft size={16} /> Prev
-          </Button>
+      <div className="flex justify-center items-center gap-4 pt-6 border-t border-accent">
+        <Button
+          variant="ghost"
+          size="sm"
+          // Check if there are keys in history to go back to
+          disabled={prevPaginateKeys.length === 0}
+          onClick={prevPostsHandler}
+          className="text-violet-500 hover:cursor-pointer hover:bg-violet-500/10 flex items-center gap-1"
+        >
+          <ChevronLeft size={16} /> Prev
+        </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!nextPaginateKey}
-            onClick={nextPostsHandler}
-            className="text-violet-500 hover:bg-violet-500/10 flex items-center gap-1"
-          >
-            Next <ChevronRight size={16} />
-          </Button>
-        </div>
-      )}
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={!nextPaginateKey}
+          onClick={nextPostsHandler}
+          className="text-violet-500 hover:cursor-pointer hover:bg-violet-500/10 flex items-center gap-1"
+        >
+          Next <ChevronRight size={16} />
+        </Button>
+      </div>
     </div>
   );
 }
 
-
+// ... PostCard remains unchanged
 function PostCard({
   post,
 }: {
@@ -186,7 +221,6 @@ function PostCard({
                   <Edit size={18} />
                 </Link>
 
-                {/* Delete Button */}
                 <DeletePost
                   post={post}
                 />
