@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
-  getSignedUrlForUpload,
-  uploadToPresignedUrl,
+  getSignedUrlForImgUpload,
+  uploadToPresignedUrlFetch,
   removeImageFromS3,
   getSignedUrlForDownload,
 } from "@/utils/s3/action";
@@ -47,12 +47,12 @@ export default function FileUpload({
     setLoading(true);
 
     try {
-      const { signedUrl, Key } = await getSignedUrlForUpload(
+      const { signedUrl, Key } = await getSignedUrlForImgUpload(
         file.name,
         file.type,
         imgType
       );
-      await uploadToPresignedUrl(signedUrl, file);
+      await uploadToPresignedUrlFetch(signedUrl, file);
       const { signedUrl: previewUrl } = await getSignedUrlForDownload(Key);
       setPreview(previewUrl);
       setKey(Key);

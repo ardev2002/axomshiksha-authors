@@ -3,7 +3,13 @@ import { s3Client } from "@/lib/s3";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-export async function uploadToPresignedUrl(url: string, file: File) {
+/**
+ * 
+ * @param url Presigned URL
+ * @param file File to upload
+ * @returns {Promise<{ message: string }>} A promise that resolves with a message indicating success or failure
+ */
+export async function uploadToPresignedUrlFetch(url: string, file: File) {
   const res = await fetch(url, {
     method: "PUT",
     headers: {
@@ -16,6 +22,10 @@ export async function uploadToPresignedUrl(url: string, file: File) {
   return { message: "Image uploaded successfully" };
 }
 
+/**
+ * 
+ * @param Key The key of the object to remove from S3
+ */
 export async function removeImageFromS3(
   Key: string
 ) {
@@ -32,6 +42,11 @@ export async function removeImageFromS3(
   }
 }
 
+/**
+ * 
+ * @param Keys An array of keys of the objects to remove from S3
+ * @returns {Promise<{ message: string }>} A promise that resolves with a message indicating success or failure
+ */
 export async function removeMultipleImagesFromS3(
   Keys: string[]
 ) {
@@ -52,7 +67,14 @@ export async function removeMultipleImagesFromS3(
   return { message: "Images removed successfully" };
 }
 
-export async function getSignedUrlForUpload(
+/**
+ * 
+ * @param fileName The name of the image to upload
+ * @param ContentType The content type of the file to upload
+ * @param imgType The type of the image to upload
+ * @returns {Promise<{ signedUrl: string, Key: string }>} A promise that resolves with the signed URL and key of the uploaded file
+ */
+export async function getSignedUrlForImgUpload(
   fileName: string,
   ContentType: string,
   imgType: "block" | "thumbnail",
@@ -73,7 +95,37 @@ export async function getSignedUrlForUpload(
   }
 }
 
-// Added function to generate signed URL for downloading/retrieving objects from S3
+/**
+ * 
+ * @param fileName The name of the asset to upload
+ * @param ContentType The content type of the file to upload
+ * @returns {Promise<{ signedUrl: string, Key: string }>} A promise that resolves with the signed URL and key of the uploaded asset
+ */
+export async function getSignedUrlForAssetUpload(
+  fileName: string,
+  ContentType: string,
+) {
+  const Key = `assets/${Date.now()}-${fileName}`;
+  const command = new PutObjectCommand({
+    Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,
+    Key,
+    ContentType
+  });
+  try {
+    const signedUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 3600,
+    });
+    return { signedUrl, Key };
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * 
+ * @param Key The key of the object to download from S3
+ * @returns {Promise<{ signedUrl: string }>} A promise that resolves with the signed URL of the downloaded file
+ */
 export async function getSignedUrlForDownload(Key: string) {
   const command = new GetObjectCommand({
     Bucket: process.env.NEXT_PUBLIC_BUCKET_NAME,

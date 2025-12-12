@@ -25,6 +25,7 @@ import { getRecentDraftPosts, getRecentPublishedPosts, getRecentScheduledPosts }
 import { cacheTag } from "next/cache";
 import { RecentPostsCard } from "./_components/RecentPostCard";
 import RefreshButton from "@/components/custom/RefreshButton";
+import AssetsUploadSection from "./_components/AssetsUploadSection";
 
 export default function AuthorDashboardPage() {
   return (
@@ -36,6 +37,14 @@ export default function AuthorDashboardPage() {
       <Suspense fallback={<AllRecentPostCardsSkeleton />}>
         <DashboardContent />
       </Suspense>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+        className="mt-6"
+      >
+        <AssetsUploadSection />
+      </motion.div>
     </>
   );
 }
@@ -127,7 +136,6 @@ export function BreadCrumbAndHeader() {
         </div>
       </div>
     </>
-
   );
 }
 
