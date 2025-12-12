@@ -1,11 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface RecentPostsCardSkeletonProps {
-  title: string;
-}
-
-export function RecentPostsCardSkeleton({ title }: RecentPostsCardSkeletonProps) {
+export function RecentPostsCardSkeleton({ title }: { title: string }) {
   return (
     <Card className="bg-background/70 border border-white/10 shadow-sm" title={title}>
       <CardHeader className="flex flex-row items-center justify-between border-b border-white/10 pb-3">

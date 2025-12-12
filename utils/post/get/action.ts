@@ -9,7 +9,6 @@ import { DBPost } from "@/utils/types";
 import { extractPostUrlParams } from "@/utils/helpers/slugify";
 import { getSignedUrlForDownload } from "@/utils/s3/action";
 import { getSession } from "@/utils/helpers/getSession";
-import { cacheTag, revalidatePath, updateTag } from "next/cache";
 
 export async function getPost(slug: string) {
   const params: QueryCommandInput = {
@@ -61,7 +60,7 @@ export async function getPost(slug: string) {
 
 export interface PaginatedPostsResponse {
   posts: Record<string, any>[];
-  nextKey: Record<string, any> | null;
+  nextKey: Record<string, any> | undefined;
 }
 
 export interface GetPaginatedPostsParams {
@@ -74,8 +73,7 @@ export interface GetPaginatedPostsParams {
 export async function getPaginatedPosts(
   filters: GetPaginatedPostsParams
 ): Promise<PaginatedPostsResponse> {
-  "use cache: private"
-  cacheTag(`posts-${filters.status}`)
+
   if (filters.status === "all") {
     const { status, ...rest } = filters;
     return getAllPaginatedPosts(rest as any);
@@ -106,6 +104,8 @@ export async function getPaginatedPosts(
 
   const { Items, LastEvaluatedKey } = await db.send(new QueryCommand(params));
 
+  console.log("LastEvaluatedKey:", LastEvaluatedKey);
+  
   if (Items && Items.length > 0) {
     const processedItems = await Promise.all(Items.map(async (item) => {
       try {
@@ -130,13 +130,13 @@ export async function getPaginatedPosts(
 
     return {
       posts: processedItems,
-      nextKey: LastEvaluatedKey || null,
+      nextKey: LastEvaluatedKey,
     };
   }
 
   return {
     posts: Items || [],
-    nextKey: LastEvaluatedKey || null,
+    nextKey: LastEvaluatedKey,
   };
 }
 
@@ -179,7 +179,7 @@ export async function searchPosts(
 
   return {
     posts: result.Items || [],
-    nextKey: result.LastEvaluatedKey || null,
+    nextKey: result.LastEvaluatedKey,
   };
 }
 
@@ -224,6 +224,6 @@ export async function getAllPaginatedPosts(
   
   return {
     posts: limitedPosts,
-    nextKey: null // Simplified pagination for mixed statuses
+    nextKey: undefined // Simplified pagination for mixed statuses
   };
 }

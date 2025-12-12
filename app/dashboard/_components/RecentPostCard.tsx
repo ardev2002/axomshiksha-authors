@@ -1,20 +1,17 @@
-"use client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ExternalLink, Edit3 } from "lucide-react";
 import { formatNumber } from "@/utils/formatNumber";
-import { motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { CountdownTimer } from "./CountDownTimer";
 
 interface RecentPost {
   id: number;
   title: string;
   date: string;
   slug: string;
-  publishTime?: string; // Add publishTime for scheduled posts
+  publishTime?: string;
 }
 
 interface RecentPostsCardProps {
@@ -25,75 +22,6 @@ interface RecentPostsCardProps {
   posts: RecentPost[];
   viewAllHref: string;
   isPublished?: boolean;
-  // Add refresh function prop
-  onPostStatusChange?: ({ id, title, date, slug }: RecentPost) => void;
-}
-
-// CountdownTimer component for scheduled posts
-export function CountdownTimer({ publishTime, onPostPublished }: { publishTime?: string; onPostPublished?: () => void }) {
-  const [timeLeft, setTimeLeft] = useState<string>("");
-  const router = useRouter();
-  useEffect(() => {
-    if (!publishTime) return;
-
-    const calculateTimeLeft = () => {
-      const now = new Date();
-      const publishDate = new Date(publishTime);
-      const difference = publishDate.getTime() - now.getTime();
-
-      if (difference <= 0) {
-        return "Published";
-      }
-
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-      if (days > 0) {
-        return `${days}d ${hours}h`;
-      } else if (hours > 0) {
-        return `${hours}h ${minutes}m`;
-      } else {
-        return `${minutes}m ${seconds}s`;
-      }
-    };
-
-    // Set initial time left
-    setTimeLeft(calculateTimeLeft());
-
-    // Update every second
-    const timer = setInterval(() => {
-      const newTimeLeft = calculateTimeLeft();
-      setTimeLeft(newTimeLeft);
-
-      // Show dialog and clear interval if post is published
-      if (newTimeLeft === "Published") {
-        clearInterval(timer);
-        // Call the callback to notify parent component
-        if (onPostPublished) {
-          onPostPublished();
-          router.refresh();
-        }
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [publishTime, onPostPublished]);
-
-  if (!publishTime) return null;
-
-  return (
-    <>
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="text-xs font-mono bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full border border-purple-500/30"
-      >
-        {timeLeft}
-      </motion.span>
-    </>
-  );
 }
 
 export function RecentPostsCard({
@@ -104,7 +32,6 @@ export function RecentPostsCard({
   posts,
   viewAllHref,
   isPublished = false,
-  onPostStatusChange,
 }: RecentPostsCardProps) {
   const getBadgeClass = () => {
     switch (badgeVariant) {
@@ -179,14 +106,13 @@ export function RecentPostsCard({
               key={`${badgeVariant}-${post.id}-${post.slug}`}
               className="flex items-center justify-between px-2 rounded-md transition w-full min-w-0"
             >
-              <p className="text-sm text-foreground truncate flex-1 min-w-0">
+              <p title={post.title} className="text-sm text-foreground truncate flex-1 min-w-0">
                 {post.title}
               </p>
               <div className="flex items-center gap-1 ml-2 shrink-0">
                 {badgeVariant === "scheduled" && post.publishTime ? (
-                  <CountdownTimer 
-                    publishTime={post.publishTime} 
-                    onPostPublished={() => onPostStatusChange?.(post)} // Pass the callback
+                  <CountdownTimer
+                    publishTime={post.publishTime} // Pass the callback
                   />
                 ) : (
                   <span className="text-xs text-muted-foreground whitespace-nowrap">

@@ -12,6 +12,8 @@ import {
   Layout,
   Clock,
   Plus,
+  Sparkles,
+  FileClock,
 } from "lucide-react";
 import Link from "next/link";
 import { getAuthorPostStats } from "@/utils/helpers/getAuthorPostStats";
@@ -19,8 +21,10 @@ import { formatNumber } from "@/utils/formatNumber";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RecentPostsCardSkeleton } from "./_components/RecentPostsCardSkeleton";
-import DashboardContent from "./_components/DashboardContent";
 import { getRecentDraftPosts, getRecentPublishedPosts, getRecentScheduledPosts } from "@/utils/helpers/getRecentPosts";
+import { cacheTag } from "next/cache";
+import { RecentPostsCard } from "./_components/RecentPostCard";
+import RefreshButton from "@/components/custom/RefreshButton";
 
 export default function AuthorDashboardPage() {
   return (
@@ -30,19 +34,56 @@ export default function AuthorDashboardPage() {
         <Stats />
       </Suspense>
       <Suspense fallback={<AllRecentPostCardsSkeleton />}>
-        <DashboardContentWrapper />
+        <DashboardContent />
       </Suspense>
     </>
   );
 }
 
-async function DashboardContentWrapper() {
+async function DashboardContent() {
+  "use cache: private"
+  cacheTag("author-dashboard")
   const statsResponse = await getAuthorPostStats();
   const publishedResponse = await getRecentPublishedPosts();
   const draftResponse = await getRecentDraftPosts();
   const scheduledResponse = await getRecentScheduledPosts();
 
-  return <DashboardContent stats={statsResponse} publishedPosts={publishedResponse} draftPosts={draftResponse} scheduledPosts={scheduledResponse} />
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25 }}
+      className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 overflow-hidden"
+    >
+      <RecentPostsCard
+        title="Published Posts"
+        icon={<Sparkles className="w-4 h-4 text-emerald-400" />}
+        badgeVariant="published"
+        totalCount={statsResponse?.totalPublishedPosts}
+        posts={publishedResponse}
+        viewAllHref="/dashboard/posts/published"
+        isPublished={true}
+      />
+
+      <RecentPostsCard
+        title="Drafted Posts"
+        icon={<FileClock className="w-4 h-4 text-amber-400" />}
+        badgeVariant="draft"
+        totalCount={statsResponse?.totalDraftPosts}
+        posts={draftResponse}
+        viewAllHref="/dashboard/posts/draft"
+      />
+
+      <RecentPostsCard
+        title="Scheduled Posts"
+        icon={<Clock className="w-4 h-4 text-purple-400" />}
+        badgeVariant="scheduled"
+        totalCount={statsResponse?.totalScheduledPosts}
+        posts={scheduledResponse}
+        viewAllHref="/dashboard/posts/scheduled"
+      />
+    </motion.div>
+  )
 }
 
 export function BreadCrumbAndHeader() {
@@ -58,7 +99,7 @@ export function BreadCrumbAndHeader() {
           },
         ]}
       />
-      {/* Header */}
+
       <div className="flex flex-wrap sm:flex-row items-center justify-between gap-4 border-b border-white/10 pb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500 border border-violet-500/30 shadow-sm">
@@ -70,6 +111,7 @@ export function BreadCrumbAndHeader() {
         </div>
 
         <div className="flex items-center gap-3">
+          <RefreshButton />
           <Link href="/dashboard/add-new-post">
             <Button variant="outline" className="flex items-center gap-2 hover:cursor-pointer">
               <Plus size={16} />
@@ -85,10 +127,14 @@ export function BreadCrumbAndHeader() {
         </div>
       </div>
     </>
+
   );
 }
 
 async function Stats() {
+  "use cache: private"
+  cacheTag("author-dashboard")
+
   const statsData = await getAuthorPostStats();
   const stats = [
     {
@@ -169,18 +215,6 @@ export function StatsSkeleton() {
       ))}
     </div>
   );
-}
-
-export function RecentlyPublishedPostsSkeleton() {
-  return <RecentPostsCardSkeleton title="Recently Published" />;
-}
-
-export function DraftedPostsSkeleton() {
-  return <RecentPostsCardSkeleton title="Drafted Posts" />;
-}
-
-export function RecentlyScheduledPostsSkeleton() {
-  return <RecentPostsCardSkeleton title="Scheduled Posts" />;
 }
 
 export function AllRecentPostCardsSkeleton() {

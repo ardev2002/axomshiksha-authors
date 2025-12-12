@@ -3,9 +3,7 @@ import { cache } from "react";
 import { db } from "@/lib/dynamoClient";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { Select } from "@aws-sdk/client-dynamodb";
-import { getFreshUser } from "./getFreshUser";
 import { getSession } from "./getSession";
-import { cacheTag } from "next/cache";
 
 export interface AuthorPostStats {
   totalPosts: number;
@@ -41,15 +39,13 @@ async function getCountByStatus(status: string): Promise<number> {
     const { Count } = await db.send(new QueryCommand(params));
     return Count || 0;
   } catch (error) {
-    console.error(`Error fetching count for status ${status}:`, error);
+    console.error(error);
     return 0;
   }
 }
 
 export const getAuthorPostStats = cache(
   async (): Promise<AuthorPostStats | null> => {
-    "use cache: private"
-    cacheTag("author-post-stats");
     try {
       // Fetch counts for each status efficiently using COUNT queries
       const [totalPublished, totalDraft, totalScheduled] = await Promise.all([
@@ -68,7 +64,7 @@ export const getAuthorPostStats = cache(
         totalViews: 0 // Placeholder as view counting isn't implemented
       };
     } catch (error) {
-      console.error("Error fetching author stats:", error);
+      console.error(error);
       return null;
     }
   }

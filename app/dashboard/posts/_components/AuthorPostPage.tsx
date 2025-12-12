@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 
 interface AuthorPostsPageProps {
   initialPosts: Record<string, any>[];
-  nextKey: Record<string, any> | null,
+  nextKey: Record<string, any> | undefined,
   status: DBPost['status'] | "all"; // Add status prop
   sortDirection: "latest" | "oldest" | undefined;
 }
@@ -27,8 +27,8 @@ export default function AuthorPostsPage({
   sortDirection,
 }: AuthorPostsPageProps) {;
   const [posts, setPosts] = useState<Record<string, any>[]>(initialPosts);
-  const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | null>(nextKey || null);
-  const [prevPaginateKeys, setPrevPaginateKeys] = useState<(Record<string, any> | null)[]>([]);
+  const [nextPaginateKey, setNextPaginateKey] = useState<Record<string, any> | undefined>(nextKey || undefined);
+  const [prevPaginateKeys, setPrevPaginateKeys] = useState<(Record<string, any> | undefined)[]>([]);
   const [sortBy, setSortBy] = useState<"latest" | "oldest" | undefined>(sortDirection);
   const router = useRouter();
 
