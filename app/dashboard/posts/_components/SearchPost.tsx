@@ -19,7 +19,7 @@ export default function SearchPost() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [lastEvaluatedKey, setLastEvaluatedKey] = useState<Record<string, any> | null>(null);
+  const [lastEvaluatedKey, setLastEvaluatedKey] = useState<Record<string, any> | undefined>(undefined);
   const [hasMore, setHasMore] = useState(true);
 
   // Helper function to highlight search terms
